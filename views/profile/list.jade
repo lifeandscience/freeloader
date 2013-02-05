@@ -1,0 +1,11 @@
+extends ../layout
+
+block content
+	h1= title
+	if locals.users
+		ul
+			each user in locals.users
+				li
+					| #{user.name} (#{user.points}) &mdash; Next Action: #{user.todaysAction ? (user.todaysAction == 'last-action' ? user.lastAction : user.todaysAction) : user.defaultAction} 
+					a.btn(href="/profile/"+user._id) Edit
+	a(href="/profile/generate") Generate Profile

@@ -1,0 +1,24 @@
+body.loggedIn {
+  padding-top: 60px;
+}
+ul.groups {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+ul.groups span.group-icon {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #333;
+}
+/*
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+*/

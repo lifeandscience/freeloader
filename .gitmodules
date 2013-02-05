@@ -1,0 +1,3 @@
+[submodule "public/css3-social-signin-buttons"]
+	path = public/css3-social-signin-buttons
+	url = git://github.com/necolas/css3-social-signin-buttons.git
