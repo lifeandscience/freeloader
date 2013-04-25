@@ -1,0 +1,55 @@
+extends layout
+
+block body
+	#container-inner
+		p Welcome to Freeloader.
+		- if (player)
+			h3 What will you do today?
+			form(action="/", method="post")
+				label.checkbox
+					input(type="checkbox", name="makeDefault")
+					small Make this decision my default
+				button.btn.popover-trigger(
+							type="submit", 
+							name="action", 
+							value="invest", 
+							class=(player.todaysAction == 'invest' ? 'btn-primary' : ''), 
+							data-content="You will invest #{pointsToInvest} points and receive a portion of the combined proceeds."
+					) 
+					| Invest 
+					b.icon.icon-info-sign
+				
+				
+				button.btn.popover-trigger(
+							type="submit", 
+							name="action", 
+							value="freeload", 
+							class=(player.todaysAction == 'freeload' ? 'btn-primary' : ''), 
+							data-content="You will not invest any points, but will receive a portion of the proceeds."
+					)  
+					| Freeload  
+					b.icon.icon-info-sign
+				
+				button.btn.popover-trigger(
+							type="submit", 
+							name="action", 
+							value="leavegroup", 
+							class=(player.todaysAction == 'leavegroup' ? 'btn-primary' : ''), 
+							data-content="You will leave this group and be re-assigned a new group for tomorrow."
+					)  
+					| Leave Group 
+					b.icon.icon-info-sign
+				
+				if (player.lastAction)
+					button.btn.popover-trigger(
+								type="submit", 
+								name="action", 
+								value="last-action", 
+								class=(player.todaysAction == 'freeload' ? 'btn-primary' : ''), 
+								data-content="Your last action (invest or freeload) will be repeated today. If you set this as your default but choose to manually take action on a day in the future, that action will then be repeated (not the action indicated in parenthesis on this button)."
+						)
+						| Do what I did yesterday (#{player.lastAction})! 
+						b.icon.icon-info-sign
+		
+		- else
+			a#signup(href="/login") Sign in or register to play!

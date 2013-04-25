@@ -1,3 +1,12 @@
+process.env.TZ = 'America/New_York';
+
+// Check expected ENV vars
+['BASEURL', 'PORT', 'MONGOHQ_URL', 'CLIENT_ID', 'CLIENT_SECRET', 'AUTH_SERVER', 'AWS_ACCESS_KEY', 'AWS_SECRET'].forEach(function(envVar, index){
+	if(!process.env[envVar]){
+		console.log(envVar+' environment variable is required!');
+		process.exit();
+	}
+})
 
 /**
  * Module dependencies.
@@ -6,83 +15,112 @@
 var express = require('express')
   , http = require('http')
   , path = require('path')
+  , db = require('./db')
+  , vm = require('vm')
+  , util = require('util')
+  , fs = require('fs')
   , flash = require('connect-flash')
-  , models = require('./lib/models')
   , routes = require('./routes')
-  , User = models.User
-  , passport = require('passport')
-  , FacebookStrategy = require('passport-facebook').Strategy
+  , auth = require('./auth')
+  , moment = require('moment')
+  , MongoStore = require('connect-mongo')(express)
   , config = require('./config');
 
-var app = express();
-
-passport.use(new FacebookStrategy({
-		clientID: process.env.FB_APP_ID || '240269872746246',
-		clientSecret: process.env.FB_SECRET || '7797ab8af4f7e1cda5e7f9418e7a9db5',
-		callbackURL: (process.env.BASEURL || 'http://localhost:5000') + '/auth/facebook/callback'
-	},
-	function(accessToken, refreshToken, profile, done) {
-		User.findOrCreateFromFacebook(profile, function(err, user) {
-			if (err) { return done(err); }
-			done(null, user);
-		});
-	}
-));
-
-// Serialize based on the user ID.
-passport.serializeUser(function(user, done) {
-	// @todo: Save your user to the database using the ID as a key.
-	done(null, user._id);
+var app = module.exports = express();
+var port = process.env.PORT || 5000;
+var server = http.createServer(app);
+  
+// Models
+var modelsDir = __dirname + '/app/models';
+fs.readdirSync(modelsDir).forEach(function(file){
+	require(modelsDir + '/' + file);
 });
 
-// Load the user and return it to passport.
-passport.deserializeUser(function(id, done) {
-	// @todo:	Load your user here based off of the ID, and call done with
-	// that user object.
-	User.findById(id, done);
+server.listen(port, function(){
+	console.log("Express server listening on port %d in %s mode", port, app.settings.env);
 });
 
 app.configure(function(){
 	app.set('port', process.env.PORT || 5000);
-	app.set('views', __dirname + '/views');
+	app.set('views', __dirname + '/app/views');
 	app.set('view engine', 'jade');
+	app.use(require('less-middleware')({ src: __dirname + '/public' }));
+	app.use(express.static(path.join(__dirname, 'public')));
+	
 	app.use(express.favicon());
 	app.use(express.logger('dev'));
 	app.use(express.bodyParser());
 	app.use(express.methodOverride());
 	app.use(express.cookieParser('your secret here'));
-	app.use(express.session());
+	app.use(express.session({
+		secret: "plzkthxbai"
+		, store: new MongoStore({
+			url: process.env.MONGOHQ_URL
+		})
+	}));
 	app.use(flash());
-	app.use(passport.initialize());
-	app.use(passport.session());
+	auth.setup(app);
 
+	var helpers = require('./helpers');
+	app.locals(helpers.staticHelpers);
 	app.use(function(req, res, next){
-		// Dynamic locals
-		res.locals.user = req.user;
-		res.locals.errorMessages = req.flash('error');
-		res.locals.successMessages = req.flash('success');
-		res.locals.config = config;
-		next();
+		res.locals.flash = req.flash.bind(req)
+		res.locals.moment = moment;
+		res.locals.token = req.session.token;
+		res.local = function(key, val){
+			res.locals[key] = val;
+		};
+		return next();
 	});
+	var setupHelper = function(key, func){
+		app.use(function(req, res, next){
+			res.locals[key] = func.bind(req, res);
+			next();
+		});
+	}
+	for(var key in helpers.dynamicHelpers){
+		setupHelper(key, helpers.dynamicHelpers[key]);
+	}
 
-	app.use(app.router);
-	app.use(require('less-middleware')({ src: __dirname + '/public' }));
-	app.use(express.static(path.join(__dirname, 'public')));
 });
 
 app.configure('development', function(){
+	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+});
+
+app.configure('production', function(){
 	app.use(express.errorHandler());
 });
 
+// Routes
+auth.route(app);
+
+var dir = __dirname + '/app/controllers';
+// grab a list of our route files
+fs.readdirSync(dir).forEach(function(file){
+	var str = fs.readFileSync(dir + '/' + file, 'utf8');
+	// inject some pseudo globals by evaluating
+	// the file with vm.runInNewContext()
+	// instead of loading it with require(). require's
+	// internals use similar, so dont be afraid of "boot time".
+	var context = { app: app, db: db, util: util, config: config, require: require, __dirname: __dirname };
+	// we have to merge the globals for console, process etc
+	for (var key in global) context[key] = global[key];
+	// note that this is essentially no different than ... just using
+	// global variables, though it's only YOUR code that could influence
+	// them, which is a bonus.
+	vm.runInNewContext(str, context, file);
+});
+
+
+/*
 app.get('/', routes.index);
 app.post('/', routes.post);
 app.get('/clear', routes.clr);
 app.get('/do/day/wyffUgTythyruhidas', routes.doDay);
+app.get('/groups', routes.group.list);
 
-app.get('/auth', routes.auth.index);
-app.get('/auth/facebook', routes.auth.facebook.index);
-app.get('/auth/facebook/callback', routes.auth.facebook.callback);
-
+/*
 app.get('/profile/del', routes.profile.del);
 app.get('/profile/list', routes.profile.list);
 app.get('/profile/generate', routes.profile.generate);
@@ -91,9 +129,7 @@ app.get('/profile', routes.profile.get);
 app.post('/profile', routes.profile.post);
 app.get('/profile/:id', routes.profile.getById);
 app.post('/profile/:id', routes.profile.postById);
+*/
 
-app.get('/groups', routes.group.list);
 
-http.createServer(app).listen(app.get('port'), function(){
-	console.log("Express server listening on port " + app.get('port'));
-});
+

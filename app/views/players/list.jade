@@ -1,0 +1,15 @@
+extends ../layout
+
+block body
+	#container-inner
+		h1 #{title}
+			
+		if (players.length > 0)
+			ul
+				each player in players
+					li
+						| #{player.remote_user} ($#{player.balance}) &mdash; Next Action: #{player.todaysAction ? (player.todaysAction == 'last-action' ? player.lastAction : player.todaysAction) : player.defaultAction} 
+						a.btn(href="/players/edit/" + player._id) Edit
+		
+		else
+			p There are no players yet.

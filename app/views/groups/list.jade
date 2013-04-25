@@ -1,0 +1,21 @@
+extends ../layout
+
+extends ../layout
+
+block body
+	#container-inner
+		h1 #{title}
+		if (groups.length > 0)
+			ul.groups
+				each group in locals.groups
+					li
+						span.group-icon(style="background-color: "+group.color) #{group.color}
+						if group.players
+							ul.players
+								each player in group.players
+									li
+										| #{player.name} (#{player.points}) &mdash; Next Action: #{player.todaysAction ? (player.todaysAction == 'last-action' ? player.lastAction : player.todaysAction) : player.defaultAction} 
+										a.btn(href="/profile/"+player._id) Edit
+	
+		else
+			p There are no groups yet.

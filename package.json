@@ -1,22 +1,31 @@
 {
-  "name": "application-name",
+  "name": "freeloader",
   "version": "0.0.1",
   "private": true,
-  "scripts": {
-    "start": "node app"
-  },
   "dependencies": {
-    "express": "3.1.0",
-    "jade": "*",
-    "less-middleware": "*",
-    "passport": "*",
-    "passport-facebook": "*",
-    "mongoose": "*",
-    "connect-flash": "*",
-    "underscore": "*"
+      "underscore": "*"
+    , "async": ">= 0.0.1"
+    , "aws2js": "< 0.7.0"
+    , "express": ">= 0.0.1"
+    , "express-form": ">= 0.0.1"
+    , "jade": ">= 0.0.1"
+    , "mongoose": ">= 0.0.1"
+    , "connect-mongo": ">= 0.0.1"
+    , "nodemailer": ">= 0.0.1"
+    , "less": ">= 0.0.1"
+    , "csv": ">= 0.0.1"
+    , "moment": ">= 0.0.1"
+    , "less-middleware": ">= 0.0.1"
+    , "connect-flash": ">= 0.0.1"
+    , "socket.io": ">= 0.0.1"
+    , "simple-oauth2": ">= 0.0.1"
+    , "request": ">= 0.0.1"
   },
   "engines": {
     "node": "0.8.x",
     "npm":  "1.1.x"
+  },
+  "scripts": {
+    "start": "BASEURL=\"http://localhost:5000\" PORT=5000 MONGOHQ_URL=\"mongodb://localhost/freeloader\" CLIENT_ID=5173637145ac8ecc15000001 CLIENT_SECRET=47f2b6ff622a35b9149691c2784dc740 AUTH_SERVER=\"http://app.local:8000\" AWS_ACCESS_KEY=AKIAJGTS6FVN4QPODUUA AWS_SECRET=\"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\" supervisor app.js"
   }
 }

@@ -3,18 +3,17 @@
  * GET home page.
  */
 var _ = require('underscore')
-  , passport = require('passport')
   , mongoose = require('mongoose')
-  , User = mongoose.model('User')
-  , Group = mongoose.model('Group')
-  , Log = mongoose.model('Log')
+  , Player = require('../app/models/player')
+  , Group = require('../app/models/group')
+//  , Log = mongoose.model('Log')
   , config = require('../config');
 
 module.exports = {
 	clr: function(req, res){
-		mongoose.model('User').collection.drop();
+		mongoose.model('Player').collection.drop();
 		mongoose.model('Group').collection.drop();
-		mongoose.model('Log').collection.drop();
+//		mongoose.model('Log').collection.drop();
 
 		req.session.destroy();
 		res.redirect('/');
@@ -30,26 +29,26 @@ module.exports = {
 				// Set todaysAction to null
 				// Save the user
 		// TODO: Should we force a rebalance of groups at this piont, in case we have a group that's too small?
-		Log.create({
-			type: 'simulate-day'
-		});
+//		Log.create({
+//			type: 'simulate-day'
+//		});
 		Group.find().populate('users').exec(function(err, groups){
 			if(err){
 				req.flash('error', 'Error finding groups');
 				return res.redirect('/');
 			}
-			var numUsersToSave = 0
-			  , done = function(){
-					if(--numUsersToSave == 0){
-						// Finished!
-						console.log('done?!');
-						req.flash('success', 'Day Change simulated successfully!');
-						res.redirect('/');
-					}
+			var numUsersToSave = 0;
+			var done = function(){
+				if(--numUsersToSave == 0){
+					// Finished!
+					console.log('done?!');
+					req.flash('success', 'Day Change simulated successfully!');
+					res.redirect('/');
 				}
+			};
 			_.each(groups, function(group){
-				var numInvestors = 0
-				  , numUsers = 0;
+				var numInvestors = 0;
+				var numUsers = 0;
 				numUsersToSave += group.users.length;
 				_.each(group.users, function(user){
 					// If this user has selected 'invest' for today, or
@@ -70,13 +69,13 @@ module.exports = {
 					numUsers++;
 				});
 				var profit = Math.floor(((numInvestors * config.pointsToInvest) * 2) / numUsers);
-				_.each(group.users, function(user){
-					user.points += profit;
-					user.lastAction = user.todaysAction;
-					user.todaysAction = null;
-					user.save(function(err, user){
+				_.each(group.players, function(player){
+					player.points += profit;
+					player.lastAction = user.todaysAction;
+					player.todaysAction = null;
+					player.save(function(err, player){
 						if(err){
-							req.flash('error', 'Error saving user! '+err);
+							req.flash('error', 'Error saving player! ' + err);
 						}
 						done();
 					});
@@ -85,7 +84,7 @@ module.exports = {
 		});
 	},
 	index: function(req, res){
-		res.render('index', { title: 'Express' });
+		res.render('index', { title: 'Freeloader', player: req.player, pointsToInvest: config.pointsToInvest });
 	},
 	post: function(req, res){
 		// handle the post
@@ -115,30 +114,7 @@ module.exports = {
 			res.redirect('/');
 		})
 	},
-	auth: {
-		index: function(req, res){
-			res.render('auth', {title: 'Login'});
-		},
-		facebook: {
-			index: passport.authenticate('facebook', {scope: 'email'}),
-			callback: passport.authenticate('facebook', {
-				scope: 'email'
-			  , failureRedirect: '/'
-			  , successRedirect: '/profile'
-			})
-		}
-	},
 	profile: {
-		generate: function(req, res){
-			var user = new User();
-			user.save(function(err, user){
-				user.name = user._id.toString();
-				user.save(function(err, user){
-					req.flash('success', 'User generated successfully!');
-					res.redirect('/profile/list');
-				});
-			});
-		},
 		list: function(req, res){
 			User.find().exec(function(err, users){
 				if(err || !users){
@@ -213,7 +189,7 @@ module.exports = {
 	},
 	group: {
 		list: function(req, res){
-			Group.find().populate('users').exec(function(err, groups){
+			Group.find().populate('players').exec(function(err, groups){
 				if(err){
 					req.flash('error', 'Error retrieving groups: '+err);
 					return res.redirect('/');
