@@ -7,7 +7,6 @@
     , "async": ">= 0.0.1"
     , "aws2js": "< 0.7.0"
     , "express": ">= 0.0.1"
-    , "express-form": ">= 0.0.1"
     , "jade": ">= 0.0.1"
     , "mongoose": ">= 0.0.1"
     , "connect-mongo": ">= 0.0.1"
@@ -18,7 +17,7 @@
     , "less-middleware": ">= 0.0.1"
     , "connect-flash": ">= 0.0.1"
     , "socket.io": ">= 0.0.1"
-    , "simple-oauth2": ">= 0.0.1"
+    , "simple-oauth2": "git://github.com/lifeandscience/simple-oauth2.git#add_client_credentials_support"
     , "request": ">= 0.0.1"
   },
   "engines": {

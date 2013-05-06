@@ -16,7 +16,6 @@ app.post('/', function(req, res){
 				req.player.todaysAction = req.body.action;
 			}
 		}
-		console.log("You've chosen: " + req.player.todaysAction);
 		
 		if(req.body.makeDefault){
 			req.player.defaultAction = req.body.action;

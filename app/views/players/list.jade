@@ -8,8 +8,27 @@ block body
 			ul
 				each player in players
 					li
-						| #{player.remote_user} ($#{player.balance}) &mdash; Next Action: #{player.todaysAction ? (player.todaysAction == 'last-action' ? player.lastAction : player.todaysAction) : player.defaultAction} 
-						a.btn(href="/players/edit/" + player._id) Edit
+						| #{player.remote_user} ($#{player.balance}) &mdash; Next Action: #{player.todaysAction ? (player.todaysAction == 'last-action' ? player.lastAction : player.todaysAction) : player.defaultAction}  &mdash; Group ID: #{player.group}
+					//	a.btn(href="/players/edit/" + player._id) Edit
 		
 		else
 			p There are no players yet.
+			
+			
+			
+			
+			
+		h1 Simulate Players
+		
+			div 
+				a.btn(href="/players/simulate/create/2/") Create (2) Simulated Players
+				a.btn(href="/players/simulate/create/9/") Create (9) Simulated Players
+				a.btn(href="/players/simulate/create/33/") Create (33) Simulated Players
+			div
+				a.btn(href="/players/simulate/newactions") Change Actions for all Players
+
+			div
+				a.btn(href="/players/simulate/deleteall") Delete All Simulated Players
+				
+		
+		

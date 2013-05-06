@@ -7,7 +7,10 @@ var PlayerSchema = new Schema({
 	remote_user: String,
 	balance: {type: Number, default: 0},
 	lastModified: {type: Date, default: function(){ return Date.now(); }},
-	group: {type: Schema.ObjectId, ref: 'Group'}
+	group: {type: Schema.ObjectId, ref: 'Group'},
+	defaultAction: String,
+	lastAction: String,
+	todaysAction: String
 });
 
 
