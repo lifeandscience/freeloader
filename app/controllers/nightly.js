@@ -61,7 +61,6 @@ app.get('/nightly/:experimonth_id', auth.authorize(2, 10), function(req, res){
 					group.save(function(err, group){
 						if(err){
 							console.log('error saving group: ', err);
-							return next(err);
 						}
 					});	
 					//Manually add our group the the groups array
@@ -70,15 +69,17 @@ app.get('/nightly/:experimonth_id', auth.authorize(2, 10), function(req, res){
 				}
 			}
 			
-			console.log("NUM PLAYERS NEEDING GROUP: " + new_players.length);
-			console.log("NUM PLAYERS LEAVING GROUPS: " + players_leaving_group.length);
+			console.log("(BEFORE) NUM PLAYERS NEEDING GROUP: " + new_players.length);
+			console.log("(BEFORE) NUM PLAYERS LEAVING GROUPS: " + players_leaving_group.length);
+			console.log(groups);
 			
 			//TODO: Seems like we could get stuck here if we only have 1 group and a player tries to leave!!!!!!!!!!!!!!!!!!!!!!!!
 			//TODO: DEADLOCK - 2 groups where 1 is full and the other group has 2 members who want to leave.
 			while(new_players.length > 0 || players_leaving_group.length > 0) {
-				
 				_.each(groups, function(group) {
-				//	console.log("NUM PLAYERS *TRYING* to leave groups: " + players_leaving_group.length);
+
+					console.log("NUM PLAYERS *TRYING* to leave groups: " + players_leaving_group.length);
+					console.log(groups);
 					if(group.num_players < MAX_PLAYERS_PER_GROUP) {
 						//Try to add a new player to this group
 						if(new_players.length > 0) {
@@ -93,30 +94,45 @@ app.get('/nightly/:experimonth_id', auth.authorize(2, 10), function(req, res){
 							if(p.group.equals(group)) {
 								//Uh oh, push this player back onto the array since this is the same group
 								console.log("Uh oh, push this player back onto the array since this is the same group");
-								players_leaving_group.push(p);
+								console.log(p);
+								
+								players_leaving_group.unshift(p); //put the player to the front of the array in hopes that a spot will open up for him.
 							} else {
 								//We're good. Update player counts and associate new group to player
-								p.group.num_players--; //user leaves old group
-								p.group = group;
+								console.log("GOOD! Moving player to new group...");
+								p.group.num_players--; //user leaves old group	
+								//TODO: Do i need to save p.group first?		
+								p.group.save();				
+								p.group = group._id;
 								group.num_players++; //user joins new group
 							}
 						}
-					}
 					
-					//Save group (TODO: handle errors)
-					group.save();
 					
-					//Save the player if neccessary
-					p && p.save(function(err, group){
-						if(err){
-							console.log('error saving player: ', err);
+						//Save group (TODO: handle errors)
+						group.save(function(err, g){
+							console.log("DONE SAVING GROUP");
+						});
+	
+						//Save the player if neccessary
+						if(p) {
+							p.save(function(err, player){
+								if(err){
+									console.log('error saving player: ', err);
+								}
+							});
+								
 						}
-					});
+					
+					}
 					
 				});
 				
 			}
 			
+			console.log("(AFTER) NUM PLAYERS NEEDING GROUP: " + new_players.length);
+			console.log("(AFTER) NUM PLAYERS LEAVING GROUPS: " + players_leaving_group.length);
+						
 			console.log(groups);
 			
 			
@@ -129,9 +145,7 @@ app.get('/nightly/:experimonth_id', auth.authorize(2, 10), function(req, res){
 				
 				_.each(players, function(player) {
 					//Only focus on players that are a member of this group.
-					console.log(player.group);
-					console.log(group);
-					if((player.group).equals(group)) {	//TODO: THIS IS BROKEN WHEN MORE THAN 1 GROUP!!
+					if(player.group && player.group == group._id.toString()) {
 						
 						//If the player doesnt have an action for today, check for a default or else set to freeload.
 						if(!player.todaysAction) {
@@ -152,19 +166,16 @@ app.get('/nightly/:experimonth_id', auth.authorize(2, 10), function(req, res){
 				dailyTotal = dailyTotal * 2;
 				var earnedAmount = dailyTotal / eligiblePlayers.length;
 				
-				//Loop players again to update their balance w/ the earned amount from investing
-				_.each(players, function(player) {
-					//Only focus on players that are a member of this group.
-					if(player.group.equals(group)) {
-						player.balance += earnedAmount;
-						//TODO: Log this event!!
-						player.lastAction = player.todaysAction;
-						player.todaysAction = null;
-						player.save(); //TODO: handle error case
-					}
+				//Loop eligiblePlayers again to update their balance w/ the earned amount from investing
+				_.each(eligiblePlayers, function(player) {
+					player.balance += earnedAmount;
+					//TODO: Log this event!!
+					player.lastAction = player.todaysAction;
+					player.todaysAction = null;
+					player.save(); //TODO: handle error case
+
 				});
 				
-			
 			});
 		
 		

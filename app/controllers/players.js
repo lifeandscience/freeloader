@@ -27,7 +27,7 @@ app.get('/players/simulate/create/:num_players', auth.authorize(2, 10), function
 		res.redirect('back');
 		return;
 	}
-	var actions = [ "invest", "freeload", "freeload" ]; //  "leavegroup"
+	var actions = [ "invest", "freeload", "leavegroup" ];
 	for(x=0; x < req.params.num_players; x++) {
 		var initial_balance = Math.floor((Math.random()*30));	//Pick a random number of points between 0-30
 		var player = new Player();
@@ -66,7 +66,7 @@ app.get('/players/simulate/deleteall', auth.authorize(2, 10), function(req, res)
 //This re-runs the random decision/action picker and assigns a new todaysAction for each player.
 app.get('/players/simulate/newactions', auth.authorize(2, 10), function(req, res){
 	Player.find().exec(function(err, players){
-		var actions = [ "invest", "freeload", "freeload" ]; //  "leavegroup"
+		var actions = [ "invest", "freeload", "leavegroup" ];
 		_.each(players, function(player) {
 			player.todaysAction = actions[Math.floor((Math.random()*100)) % 3];
 			player.save(function(err, player){
