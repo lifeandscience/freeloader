@@ -30,25 +30,15 @@ block body
 					| Freeload  
 					b.icon.icon-info-sign
 				
-				button.btn.popover-trigger(
-							type="submit", 
-							name="action", 
-							value="leavegroup", 
-							class=(player.todaysAction == 'leavegroup' ? 'btn-primary' : ''), 
-							data-content="You will leave this group and be re-assigned a new group for tomorrow."
-					)  
-					| Leave Group 
-					b.icon.icon-info-sign
-				
-				if (player.lastAction)
+				if(numPlayers > 15)
 					button.btn.popover-trigger(
 								type="submit", 
 								name="action", 
-								value="last-action", 
-								class=(player.todaysAction == 'freeload' ? 'btn-primary' : ''), 
-								data-content="Your last action (invest or freeload) will be repeated today. If you set this as your default but choose to manually take action on a day in the future, that action will then be repeated (not the action indicated in parenthesis on this button)."
-						)
-						| Do what I did yesterday (#{player.lastAction})! 
+								value="leavegroup", 
+								class=(player.todaysAction == 'leavegroup' ? 'btn-primary' : ''), 
+								data-content="You will leave this group and be re-assigned a new group for tomorrow."
+						)  
+						| Leave Group 
 						b.icon.icon-info-sign
 		
 		- else

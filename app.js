@@ -20,7 +20,6 @@ var express = require('express')
   , util = require('util')
   , fs = require('fs')
   , flash = require('connect-flash')
-  , routes = require('./routes')
   , auth = require('./auth')
   , moment = require('moment')
   , MongoStore = require('connect-mongo')(express)
@@ -111,25 +110,5 @@ fs.readdirSync(dir).forEach(function(file){
 	// them, which is a bonus.
 	vm.runInNewContext(str, context, file);
 });
-
-
-/*
-app.get('/', routes.index);
-app.post('/', routes.post);
-app.get('/clear', routes.clr);
-app.get('/do/day/wyffUgTythyruhidas', routes.doDay);
-app.get('/groups', routes.group.list);
-
-/*
-app.get('/profile/del', routes.profile.del);
-app.get('/profile/list', routes.profile.list);
-app.get('/profile/generate', routes.profile.generate);
-
-app.get('/profile', routes.profile.get);
-app.post('/profile', routes.profile.post);
-app.get('/profile/:id', routes.profile.getById);
-app.post('/profile/:id', routes.profile.postById);
-*/
-
 
 

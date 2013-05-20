@@ -1,6 +1,10 @@
+var mongoose = require('mongoose');
+var Player = mongoose.model('Player');
 
 app.get('/', function(req, res){
-	res.render('index', { title: 'Freeloader', player: req.player, pointsToInvest: config.pointsToInvest });
+	Player.count(function(err, numPlayers){
+		res.render('index', { title: 'Freeloader', player: req.player, numPlayers: numPlayers, pointsToInvest: config.pointsToInvest });
+	});
 });
 
 app.post('/', function(req, res){
@@ -9,17 +13,10 @@ app.post('/', function(req, res){
 			console.log("ERROR: Unable to save user's choice because req.player is null");
 			return res.redirect('/login');
 		}
-		if(req.body.action){
-			if(req.body.action == 'last-action'){
-				req.player.todaysAction = req.player.lastAction;
-			}else{
-				req.player.todaysAction = req.body.action;
-			}
-		}
+
+		req.player.todaysAction = req.body.action || null;
+		req.player.defaultAction = req.body.makeDefault ? req.body.action : null;
 		
-		if(req.body.makeDefault){
-			req.player.defaultAction = req.body.action;
-		}
 		if(req.body.action == 'invest' && req.player.balance < config.pointsToInvest){
 			req.flash('error', 'You don\'t have enough points to invest. <p>You must have at least ' + config.pointsToInvest + ' points to invest. \
 						You have ' + req.player.balance + ' points.</p>');
@@ -29,7 +26,7 @@ app.post('/', function(req, res){
 		req.player.save(function(err){
 			if(err){
 				req.flash('error', err);
-			}else{
+			} else {
 				req.flash('success', 'Your choice was saved successfully!');
 			}
 			res.redirect('/');

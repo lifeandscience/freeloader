@@ -3,44 +3,32 @@ extends ../layout
 block body
 	#container-inner
 		h1 #{title}
-		
-		user = user()
-		form.form-horizontal(method="post")
-			.control-group
-				label.control-label(for="name") Name: 
-				.controls
-					input#name(type="text", name="name", value=(user && user.name ? user.name : ''))
-			.control-group
-				label.control-label(for="email") Email: 
-				.controls
-					input#email(type="text", name="email", value=(user && user.email ? user.email : ''))
-			.control-group
-				label.control-label(for="gender") Gender: 
-				.controls
-					select#gender(name="gender")
-						option(value="male", selected=(user && user.gender == "male")) Male
-						option(value="female", selected=(user && user.gender == "female")) Female
-						option(value="other", selected=(user && user.gender == "other")) Other
-			.control-group
-				label.control-label(for="todaysAction") Today's Action: 
-				.controls
-					select#todaysAction(name="todaysAction")
-						option(value="invest", selected=(user && user.todaysAction == "invest")) Invest
-						option(value="freeload", selected=(user && user.todaysAction == "freeload")) Freeload
-						option(value="last-action", selected=(user && user.todaysAction == "last-action")) Repeat Last Action
-			.control-group
-				label.control-label(for="defaultAction") Default Action: 
-				.controls
-					select#defaultAction(name="defaultAction")
-						option(value="invest", selected=(user && user.defaultAction == "invest")) Invest
-						option(value="freeload", selected=(user && user.defaultAction == "freeload")) Freeload
-						option(value="last-action", selected=(user && user.defaultAction == "last-action")) Repeat Last Action
-			.control-group
-				label.control-label(for="lastAction") Last Action: 
-				.controls
-					select#lastAction(name="lastAction", disabled="disabled")
-						option(value="invest", selected=(user && user.lastAction == "invest")) Invest
-						option(value="freeload", selected=(user && user.lastAction == "freeload")) Freeload
-			.control-group
-				.controls
-					button.btn(type="submit") Update!
+		if(player)
+			form.form-horizontal(method="post")
+				.control-group
+					label.control-label(for="balance") Balance ($): 
+					.controls
+						input(type="text", name="balance", value="#{player.balance.toFixed(2)}")
+							
+				.control-group
+					label.control-label(for="todaysAction") Today's Action: 
+					.controls
+						- player.todaysAction = player.todaysAction || player.defaultAction
+						select#todaysAction(name="todaysAction")
+							option(value="")
+							option(value="invest", selected=(player.todaysAction == "invest")) Invest
+							option(value="freeload", selected=(player.todaysAction == "freeload")) Freeload	
+							option(value="leavegroup", selected=(player.todaysAction == "leavegroup")) Leave Group	
+				.control-group
+					label.control-label(for="defaultAction") Default Action: 
+					.controls
+						select#defaultAction(name="defaultAction")
+							option(value="")
+							option(value="invest", selected=(player.defaultAction == "invest")) Invest
+							option(value="freeload", selected=(player.defaultAction == "freeload")) Freeload
+							option(value="last-action", selected=(player.defaultAction == "last-action")) Repeat Last Action
+				.control-group
+					.controls
+						button.btn(type="submit") Update Player
+		else
+			p You must specify a user to edit.

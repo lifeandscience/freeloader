@@ -19,3 +19,17 @@ body > .container > #container-inner {
   margin: 0 auto;
   padding-bottom: 60px;
 }
+h1 {
+  margin: 20px 0;
+}
+table {
+  width: 100%;
+}
+table tr {
+  border-bottom: 1px #ddd solid;
+}
+table td {
+  padding: 1px;
+  margin: 0 5px;
+  text-align: center;
+}

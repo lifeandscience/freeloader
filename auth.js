@@ -70,7 +70,7 @@ module.exports = {
 					console.log('error finding player: ', err);
 					return next(err);
 				}
-				if(!players || !players.length){
+/*				if(!players || !players.length){
 					// Player doesn't exist, so create one!
 					var player = new Player();
 					player.remote_user = req.session.user._id;
@@ -84,6 +84,7 @@ module.exports = {
 					});
 				}
 				req.player = players[0];
+*/				
 				return next();
 			});
 		};

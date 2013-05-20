@@ -23,16 +23,11 @@ html(lang="en")
 						.nav-collapse
 							- if(u.role >= 10)
 								ul.nav
-									li.dropdown
-										a.dropdown-toggle(href="#", data-toggle="dropdown")
-											| Players
-											b.caret
-										ul.dropdown-menu
-											li: a(href="/players/list") List Players
-										//	
-											li: a(href="/players/add") Add Player
-											li: a(href="/players/import") Import Players
-
+									li: a(href="/players/list") Players
+								ul.nav
+									li: a(href="/groups/list") Groups
+								ul.nav
+									li: a(href="/nightly") Run Nightly Job
 
 							ul.nav.pull-right
 								li: a(href=authServer()+'/profile') Profile
