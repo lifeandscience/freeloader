@@ -6,11 +6,10 @@ var config = require('./config');
 var _ = require('underscore');
 var async = require('async');
 
-
 app.get('/nightly', auth.authorize(2, 10), function(req, res){
 
 	//Turn verbose logging on/off
-	var V = false;
+	var V = true;
 	
 	if(V) console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++");
 	
@@ -99,13 +98,17 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 								}
 							});
 							if(V) console.log("There are (" + num_players + ") players for this Experimonth.");
+							if(V) console.log("There are (" + new_players.length + ") new players that need a group.");
+							if(V) console.log("There are (" + players_leaving_group.length + ") existing players that want to leave their group.");
 				
 							// Compute the total number of groups we need.
-							var num_groups_needed = Math.ceil(num_players / 10);
+							var num_groups_needed = Math.floor(num_players / 10);
+							if(num_groups_needed === 0) num_groups_needed = 1; //need at least 1 group!
 				
 							//Create more group(s) if needed
 							if(num_groups_needed > num_groups) {
 								if(V) console.log("Based on the number of players we have, we need to create (" + (num_groups_needed - num_groups) + ") new groups.");
+								var newGroups = [];
 								for(var x=num_groups; x < num_groups_needed; x++) {
 									if(V) console.log("Creating a new group");
 									var group = new Group();
@@ -119,13 +122,45 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 									//Manually add our group the the groups array and group map
 									groups.push(group);
 									GROUP_MAP[group.id] = group;
+									newGroups.push(group);
 									num_groups++;
 								}
+								if(V) console.log("There were (" + newGroups.length + ") new groups created.");
+								//Put all of the players leaving a group into the new group(s).
+								if(newGroups.length === 1) {
+									_.each(players_leaving_group, function(p) {
+										GROUP_MAP[p.group].num_players--; //user leaves old group	
+										p.group = newGroups[0]._id;
+										newGroups[0].num_players++; //user joins new group
+										p.save(function(err){
+											if(err){
+												console.log('Error saving player after new group assignment: ', err);
+											}
+										});
+									});
+									players_leaving_group = [];
+								}
+								else if(newGroups.length > 1) {
+									//TODO: This is hard.
+								
+								}
+								//Now save all of the groups (even existing ones since we may have decremented their counts)
+								//Note: These saves my not finish before we enter the whilst loop, but it's important to save all groups
+								//		now in case we don't actually run through the whilst loop (because there are no more users to process)
+								async.eachLimit(groups, 5, function(group, nextGroup) {
+									group.save(function(err){
+										if(err){
+											console.log('Error saving group after updating num_player count: ', err);
+										}
+										nextGroup(err);
+									});								
+								}, function(err) {
+							        if(err){
+								    	console.log("An error occurred while trying to save the groups.");
+							        } 
+							        if(V) console.log("Finished new group creation and assigned players who wish to leave their group to a new group (if applicable).");
+							    });
 							}
-				
-							if(V) console.log("There are (" + new_players.length + ") new players that need a group.");
-							if(V) console.log("There are (" + players_leaving_group.length + ") existing players that want to leave their group.");
-							
 							async.whilst(
 							    function () {
 							    	return (new_players.length || players_leaving_group.length); 
@@ -261,9 +296,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 
 										});
 										
-										
 									}
-									
 									   
 							    }
 							);	//end whilst()
@@ -349,6 +382,12 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 						player.balance += earnedAmount;
 						player.save(function(err){
 							if(err) console.log('Error saving player balance: ', err);
+							//Notify user of earned amount and new balance
+							if(player.remote_user) {
+								player.notifyOfEarnedAmount(earnedAmount, player.balance, function(err, body) {
+									//On success, do nothing for now.
+								});
+							}
 							nextEligiblePlayer(err);
 						});
 					}, function(err) {
