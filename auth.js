@@ -29,10 +29,8 @@ module.exports = {
 			delete requestCache[cacheString];
 		}
 		var gotAccessToken = function(){
-			console.log('have access token');
 			params = params || {};
 			params.access_token = client_access_token;
-			console.log('params!', params);
 			OAuth2.ClientCredentials.request(method, path, params, function(err, res, body){
 				if(body && body.error && body.error == 'Access token expired!'){
 					// generate a new access_token
@@ -64,6 +62,13 @@ module.exports = {
 	}
   , setup: function(app){
 		var populatePlayer = function(req, res, next){
+		
+			console.log(req.session.user.experimonths);
+			
+			//JCW TODO: We should check to see if there is a player for *each* experimonth that the user is enrolled in. 
+			// Then, we should create a player for each one w/ the default balance if it doesnt exist already.
+			// then, we need to somehow have the user select an Experimonth, and then we can finally set req.player appropriately. humm
+			
 			var Player = mongoose.model('Player');
 			Player.find({remote_user: req.session.user._id}).exec(function(err, players){
 				if(err){

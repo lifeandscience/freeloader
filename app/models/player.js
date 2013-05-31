@@ -23,7 +23,7 @@ PlayerSchema.method('notify', function(type, format, subject, text, callback){
 		format = ['web'];
 	}
 	if(!text){
-		return callback(new Error('Can\t notify without a message!'));
+		return callback(new Error('Can\'t notify without a message!'));
 	}
 	auth.doAuthServerClientRequest('POST', '/api/1/notifications', {
 		type: type
@@ -32,21 +32,14 @@ PlayerSchema.method('notify', function(type, format, subject, text, callback){
 	  , text: text
 	  , user: this.remote_user
 	}, function(err, body){
-		// TODO: Do something with the result? Or maybe not?
-		console.log('did notification! err: ', err);
-		console.log('body: ', body);
 		callback(err, body);
 	});
 });
 
 PlayerSchema.methods.notifyOfEarnedAmount = function(earnedAmount, newBalance, callback) {
 	var title = "Today's Earned Amount";
-	var text = " You have earned $" + earnedAmount + " today. Your new balance is: $" + newBalance;	
+	var text = " You have earned $" + earnedAmount.toFixed(2) + " today. Your new balance is: $" + newBalance.toFixed(2);	
 	this.notify("info", ['web', 'email'], title, text, callback);
-};
-
-PlayerSchema.methods.getAccountBalance = function() {
-	return "Your account balance is: " + this.balance;
 };
 
 var Player = mongoose.model('Player', PlayerSchema);

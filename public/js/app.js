@@ -4,3 +4,4 @@ jQuery(function(){
 	  , trigger: 'hover'
 	});
 });
+
