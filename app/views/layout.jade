@@ -4,49 +4,25 @@ html(lang="en")
 		block head
 			meta(charset="utf-8")
 			title= title
-			link(rel="stylesheet", href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap.min.css")
-			link(rel="stylesheet", href="//netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css")
-			link(rel="stylesheet", href="/stylesheets/style.css")
-
+			link(rel="stylesheet", href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css")
+			link(rel="stylesheet", href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css")
+			link(rel="stylesheet", href="/css/style.css")
+			link(rel='stylesheet', href=locals.authServer()+'/css/navbar.css')
+			script(src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js")
+			script(src='//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js')
 	body
-		.navbar.navbar-fixed-top
-			.navbar-inner
-				.container
-					a.btn.btn-navbar(data-toggle="collapse",data-target=".nav-collapse")
-						span.icon-bar
-						span.icon-bar
-						span.icon-bar
-					a.brand(href="/") Freeloader
-					u = user()
-					- if(u)
-						.nav-collapse
-							- if(u.role >= 10)
-								ul.nav
-									li: a(href="/players/list") Players
-								ul.nav
-									li: a(href="/groups/list") Groups
-								ul.nav
-									li: a(href="/nightly") Run Nightly Job
 
-							ul.nav.pull-right
-								li: a(href=authServer()+'/profile') Profile
-								li: a(href="/logout") Logout
-
-					- else
-						if locals.token
-							a.brand.pull-right #{locals.token.access_token.substring(0, 10)+'&hellip;'}
-						ul.nav.pull-right
-							li: a(href="/login") Login
 		.container
 			.inner
 				block messages
 					#messages !{flashMessages()}
 			block body
-	
+			
+			
 		block footer
-			script
-				var _BASEURL = '!{(process.env.BASEURL || 'http://localhost:5000')}';
-			script(src="//ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js")
-			script(src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js")
-			script(src='//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js')
-			script(src="/js/app.js")
+			script.
+				var _BASEURL = '#{process.env.BASEURL}';
+			script.
+				var EM_NAV = !{JSON.stringify(locals.nav)};				
+			script(src=locals.authServer()+'/js/em-navbar.js')
+			script(src="/socket.io/socket.io.js")

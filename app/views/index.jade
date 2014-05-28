@@ -1,45 +1,12 @@
-extends layout
+extends layout 
 
 block body
 	#container-inner
-		p Welcome to Freeloader.
-		- if (player)
-			h3 What will you do today?
-			form(action="/", method="post")
-				label.checkbox
-					input(type="checkbox", name="makeDefault")
-					small Make this decision my default
-				button.btn.popover-trigger(
-							type="submit", 
-							name="action", 
-							value="invest", 
-							class=(player.todaysAction == 'invest' ? 'btn-primary' : ''), 
-							data-content="You will invest #{pointsToInvest} points and receive a portion of the combined proceeds."
-					) 
-					| Invest 
-					b.icon.icon-info-sign
-				
-				
-				button.btn.popover-trigger(
-							type="submit", 
-							name="action", 
-							value="freeload", 
-							class=(player.todaysAction == 'freeload' ? 'btn-primary' : ''), 
-							data-content="You will not invest any points, but will receive a portion of the proceeds."
-					)  
-					| Freeload  
-					b.icon.icon-info-sign
-				
-				if(numPlayers > 15)
-					button.btn.popover-trigger(
-								type="submit", 
-								name="action", 
-								value="leavegroup", 
-								class=(player.todaysAction == 'leavegroup' ? 'btn-primary' : ''), 
-								data-content="You will leave this group and be re-assigned a new group for tomorrow."
-						)  
-						| Leave Group 
-						b.icon.icon-info-sign
+		- if (hasError)
+			div.alert.alert-danger Oops! An error has occurred. Please check the console log.
+
+		h2=title
 		
-		- else
-			a#signup(href="/login") Sign in or register to play!
+		h4(style='margin:40px 0')
+			a#signup(href=process.env.AUTH_SERVER+"/currently-recruiting") Sign up to play!
+			

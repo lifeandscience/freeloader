@@ -3,7 +3,7 @@ var Group = mongoose.model('Group');
 var auth = require('./auth');
 var _ = require('underscore');
 
-app.get('/groups/list', auth.authorize(2, 10), function(req, res){
+app.get('/groups', auth.authorize(2, 10), function(req, res){
 	
 	var months = {};
 	auth.doAuthServerClientRequest('GET', '/api/1/experimonths/activeByKind/'+auth.clientID, null, function(err, experimonths){
@@ -24,7 +24,7 @@ app.get('/groups/list', auth.authorize(2, 10), function(req, res){
 					months[group.experimonth].groups.push(group);	
 				}
 			});
-			res.render('groups/list', { title: 'All Groups', experimonths: months, num_groups: groups.length });
+			res.render('groups', { title: 'All Groups', experimonths: months, num_groups: groups.length });
 		});
 	});
 });
@@ -51,6 +51,6 @@ app.get('/groups/simulate/deleteall/:experimonth_id', auth.authorize(2, 10), fun
 			}
 		});
 	});
-	res.redirect('/groups/list');
+	res.redirect('/groups');
 
 });

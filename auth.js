@@ -13,33 +13,38 @@ var mongoose = require('mongoose')
   , redirect_uri = process.env.BASEURL + '/oauth/callback'
   , request = require('request');
 
-var client_access_token = null;
-var requestCache = {};
+var client_access_token = null
+  , requestCache = {};
 
 module.exports = {
 	clientID: credentials.clientID
 	// This is for doing a request to the auth server by the client (not on behalf of a user)
 	// callback should be: function(err, res, body)
   , doAuthServerClientRequest: function(method, path, params, callback){
-		var cacheString = path+'-'+JSON.stringify(params);
+		var cacheString = path+'-'+JSON.stringify(params)
+		  , t = this;
+		// TODO: Disabling cache for testing!
+/*
 		if(method == 'GET' && requestCache[cacheString]){
 			if(requestCache[cacheString].expires && requestCache[cacheString].expires > Date.now()){
 				return callback(requestCache[cacheString].err, requestCache[cacheString].body);
 			}
 			delete requestCache[cacheString];
 		}
+*/
 		var gotAccessToken = function(){
 			params = params || {};
 			params.access_token = client_access_token;
 			OAuth2.ClientCredentials.request(method, path, params, function(err, res, body){
-				if(body && body.error && body.error == 'Access token expired!'){
-					// generate a new access_token
-					client_access_token = null;
-					return doAuthServerClientRequest(method, path, params, callback);
-				}
 
 			    try      { body = JSON.parse(body); }
 			    catch(e) { /* The OAuth2 server does not return a valid JSON'); */ }
+			    
+				if(body && body.error && body.error == 'Access token expired!'){
+					// generate a new access_token
+					client_access_token = null;
+					return t.doAuthServerClientRequest(method, path, params, callback);
+				}
 
 			    if(method == 'GET'){
 				    requestCache[cacheString] = {
@@ -61,72 +66,69 @@ module.exports = {
 		gotAccessToken();
 	}
   , setup: function(app){
+  		var $this = this;
+  		
+  		var setPrimaryExperimonth = function(req, memberships) {
+	  		if(!req.session.experimonth) req.session.experimonth = {};
+  			if(memberships.length === 1) {
+	  			req.session.experimonth.current = memberships[0]._id;
+  			}
+  			req.session.experimonth.memberships = memberships;
+  		};
+
 		var populatePlayer = function(req, res, next){
-		
-			console.log(req.session.user.experimonths);
-			
-			//JCW TODO: We should check to see if there is a player for *each* experimonth that the user is enrolled in. 
-			// Then, we should create a player for each one w/ the default balance if it doesnt exist already.
-			// then, we need to somehow have the user select an Experimonth, and then we can finally set req.player appropriately. humm
-			
-			var Player = mongoose.model('Player');
-			Player.find({remote_user: req.session.user._id}).exec(function(err, players){
-				if(err){
-					console.log('error finding player: ', err);
-					return next(err);
-				}
-/*				if(!players || !players.length){
-					// Player doesn't exist, so create one!
-					var player = new Player();
-					player.remote_user = req.session.user._id;
-					return player.save(function(err, player){
-						if(err){
-							console.log('error saving player: ', err);
-							return next(err);
+			//Determine which experimonths (of this kind) the current remote_user is enrolled in.
+			$this.doAuthServerClientRequest('GET', '/api/1/experimonths/activeByKind/' + $this.clientID, null, function(err, experimonths){
+				if(experimonths) {
+					var memberships = []; //array of *active* experimonth ids that this user is a member of
+					for(var x=0; x < experimonths.length; x++) {
+						var month = experimonths[x];
+						inner: for(var y=0; y < month.users.length; y++) {
+							var uid = month.users[y]._id;
+							if(uid === req.user._id) {
+								memberships.push(month);
+								break inner;
+							}
 						}
-						req.player = player;
-						return next();
-					});
+					}
+					if(memberships.length) {
+						setPrimaryExperimonth(req, memberships);	
+					} else {
+						if(req.session.experimonth) {
+							req.session.experimonth.current = null;
+							req.session.experimonth.memberships = null;							
+						}
+						req.flash('info', 'You are not a member of any active experimonths. Please visit your Profile and ensure that you are enrolled in this experimonth. You may need to accept the agreement before your enrollment becomes active.');
+					}
 				}
-				req.player = players[0];
-*/				
 				return next();
 			});
 		};
 		app.use(function(req, res, next){
 			if(req.session.token){
-				if(!req.session.user){
+				if(!req.user){
 					// We don't have info about a user 
-					console.log('token but no user!');
 					// Use the token to request the user from the auth server
 					return request({
 						uri: process.env.AUTH_SERVER + '/profile/get?access_token='+req.session.token.access_token
 					  , json: true
 					}, function (error, response, body) {
+						if(body && body.error && body.error == 'Access token expired!'){
+							// clear the session token and start over.
+							delete req.session.token;
+							return next();
+						}
 						if(error || response.statusCode != 200){
 							return next(new Error('Error connecting to auth server'));
 						}
 						if(body.error || !body.expires || !body.user){
 							return next(new Error('Error retrieving user information: '+body.error));
 						}
-						req.session.user = body.user;
-						req.session.user_expires = new Date(body.expires);
-						populatePlayer(req, res, next);
+						req.user = body.user;
+						return populatePlayer(req, res, next);
 					});
-				}else if(!req.session.user_expires){
-					delete req.session.token;
-					delete req.session.user;
-					delete req.session.user_expires;
-					return res.redirect('/login?redirect_uri='+req.url);
-				}else if(Date.compare(req.session.user_expires, new Date) == -1){
-					// We have a user but it's expired
-					// Delete the token, delete the user, and have the user login again to get a new token
-					delete req.session.token;
-					delete req.session.user;
-					delete req.session.user_expires;
-					return res.redirect('/login?redirect_uri='+req.url);
 				}
-				return populatePlayer(req, res, next);
+ 				return populatePlayer(req, res, next);
 			}
 			return next();
 		});
@@ -140,11 +142,10 @@ module.exports = {
 			  , redirect_uri: redirect_uri
 			}, function(error, result) {
 				if(error){
-					console.log('Access Token Error', error.message);
 					req.flash('error', 'There was an error retreiving an access token!');
 					return res.redirect('/');
 				}
-				console.log('got token? ', arguments);
+/* 				console.log('got token? ', arguments, req.session.redirect_uri); */
 				req.session.token = result;
 				if(req.session.redirect_uri){
 					var uri = req.session.redirect_uri;
@@ -159,7 +160,6 @@ module.exports = {
 			if(req.session.token){
 				// We should do something with this token!
 				var token = OAuth2.AccessToken.create(req.session.token);
-				console.log('have token!', token);
 				// TODO: We can't use this as the oauth provider code doesn't set expiration
 				// We should replace this with a call to the server to determine if the user's session is still available / active
 //				if(!token.expired()){
@@ -187,13 +187,18 @@ module.exports = {
 		app.get('/logout', function(req, res, next){
 			delete req.session.redirect_uri;
 			delete req.session.token;
-			delete req.session.user;
-			delete req.session.user_expires;
-			delete req.player;
-			return res.redirect((process.env.AUTH_SERVER || 'http://app.local:8000') + '/logout');
+			delete req.user;
+			delete req.session.experimonth;
+			return res.redirect((process.env.AUTH_SERVER || 'http://app.dev:8000') + '/logout');
+		});
+		app.get('/reset-session', function(req, res, next){
+			delete req.session.token;
+			delete req.user;
+			delete req.session.experimonth;
+			return res.redirect('/login?redirect_uri=/play');
 		});
 	}
-  , authorize: function(requiredState, requiredRole, message, skipQuestionCount){
+  , authorize: function(requiredState, requiredRole){
 		if(!requiredState){
 			requiredState = 0;
 		}
@@ -201,9 +206,9 @@ module.exports = {
 			requiredRole = 0;
 		}
 		return function(req, res, next){
-			if(req.session && req.session.user){
+			if(req.user){
 				// We have a user!
-				if(req.session.user.role < requiredRole){
+				if(req.user.role < requiredRole){
 					// But the user doesn't have an appropriate role
 					req.flash('error', 'You are not authorized to view that page!');
 					res.redirect('/');
@@ -211,7 +216,18 @@ module.exports = {
 				}
 				// We're authorized!
 				return next();
+			}else if(req.session.token){
+				return next();
 			}
+
+			req.session.redirect_uri = req.url;
+			var authorization_uri = OAuth2.AuthCode.authorizeURL({
+				redirect_uri: redirect_uri
+			  , scope: '<scope>'
+			  , state: '<state>'
+			});
+			return res.redirect(authorization_uri);
+			
 			req.flash('error', 'Please login to access that page!');
 			return res.redirect('/');
 		};

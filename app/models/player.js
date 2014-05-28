@@ -5,8 +5,10 @@ var Schema = mongoose.Schema;
 
 var PlayerSchema = new Schema({
 	active: {type: Boolean, default: true},
+	name: String,
 	remote_user: String,
 	experimonth: String, // An ID from the auth server of an Experimonth
+	experimonthName: String,
 	balance: {type: Number, default: 0},
 	lastModified: {type: Date, default: function(){ return Date.now(); }},
 	group: {type: Schema.ObjectId, ref: 'Group'},

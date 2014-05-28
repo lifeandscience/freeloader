@@ -1,4 +1,4 @@
-extends ../layout
+extends layout
 
 block body
 	#container-inner
@@ -14,10 +14,9 @@ block body
 						each group in month.groups
 							li
 								p #{group._id} (#{group.num_players} players)	
-				u = user()
-				if(u && u.role >= 10 && month.groups && month.groups.length)
-					div
-						a.btn(href="/groups/simulate/deleteall/#{month._id}") Delete All Groups for this Experimonth	
+
+				div
+					a.btn(href="/groups/simulate/deleteall/#{month._id}") Delete All Groups for this Experimonth	
 
 		else
 			p There are no groups yet.

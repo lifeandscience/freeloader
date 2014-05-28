@@ -23,11 +23,13 @@ var express = require('express')
   , auth = require('./auth')
   , moment = require('moment')
   , MongoStore = require('connect-mongo')(express)
+  , utilities = require('./utilities')
   , config = require('./config');
 
 var app = module.exports = express();
 var port = process.env.PORT || 5000;
 var server = http.createServer(app);
+var io = require('socket.io').listen(server);
   
 // Models
 var modelsDir = __dirname + '/app/models';
@@ -35,8 +37,17 @@ fs.readdirSync(modelsDir).forEach(function(file){
 	require(modelsDir + '/' + file);
 });
 
+io.set('log level', 1); // reduce logging
 server.listen(port, function(){
 	console.log("Express server listening on port %d in %s mode", port, app.settings.env);
+});
+
+utilities.io = io;
+io.sockets.on('connection', function (socket) {
+	utilities.addSocket(socket);
+	socket.on('disconnect', function(){
+		utilities.removeSocket(socket);
+	});
 });
 
 app.configure(function(){
@@ -54,7 +65,8 @@ app.configure(function(){
 	app.use(express.session({
 		secret: "plzkthxbai"
 		, store: new MongoStore({
-			url: process.env.MONGOHQ_URL
+			url: process.env.MONGOHQ_URL,
+			auto_reconnect: true
 		})
 	}));
 	app.use(flash());
@@ -69,6 +81,45 @@ app.configure(function(){
 		res.local = function(key, val){
 			res.locals[key] = val;
 		};
+		
+		var _BASEURL = process.env.BASEURL;
+		var EM_NAV = [
+			{
+				'name': 'Home',
+				'link': _BASEURL+'/',
+			},
+			{
+				'name': 'Play!',
+				'link': _BASEURL + '/play',
+			},
+			{
+				'name': 'Confess',
+				'link': process.env.AUTH_SERVER + '/confess'
+			}
+		];
+
+		if(req.user && req.user.role >= 10){
+			EM_NAV.push({
+				'name': 'Games',
+				'link': '#',
+				'children': [
+					{
+						'name': 'Run Nightly Script',
+						'link': _BASEURL + '/nightly'
+					}
+				]
+			});
+			EM_NAV.push({
+				'name': 'Players',
+				'link': _BASEURL+'/players'
+			});
+			EM_NAV.push({
+				'name': 'Groups',
+				'link': _BASEURL+'/groups'
+			});
+		}
+		res.locals.nav = EM_NAV;
+		
 		return next();
 	});
 	var setupHelper = function(key, func){

@@ -14,7 +14,7 @@ app.get('/players/edit/:player_id', auth.authorize(2, 10), function(req, res){
 	}
 	Player.find({ _id: req.params.player_id }).exec(function(err, players){
 		if(players && players.length > 0) {
-			res.render('players/edit', {title: 'Edit Player', util: util, player: players[0] });
+			res.render('players-edit', {title: 'Edit Player', util: util, player: players[0] });
 		}	
 	});
 });
@@ -35,15 +35,15 @@ app.post('/players/edit/:player_id', auth.authorize(2, 10), function(req, res){
 			});
 			player.save(function(){
 				req.flash('success', 'Player updated!');
-				res.redirect('/players/list');
+				res.redirect('/players');
 			});
 		}
 	});
 });
 
-app.get('/players/list', auth.authorize(2, 10), function(req, res){
+app.get('/players', auth.authorize(2, 10), function(req, res){
 	Player.find().sort({balance: 'desc'}).exec(function(err, players){
-		res.render('players/list', { title: 'All Players', players: players });
+		res.render('players', { title: 'All Players', players: players });
 	});
 });
 
@@ -81,7 +81,7 @@ app.get('/players/simulate/create/:num_players', auth.authorize(2, 10), function
 					});
 					initial_balance ++;
 				}
-				res.redirect('/players/list');
+				res.redirect('/players');
 			
 			});
 		
@@ -99,7 +99,7 @@ app.get('/players/simulate/deleteall', auth.authorize(2, 10), function(req, res)
 			});
 		});
 	});
-	res.redirect('/players/list');
+	res.redirect('/players');
 
 });
 
@@ -125,7 +125,7 @@ app.get('/players/simulate/newactions', auth.authorize(2, 10), function(req, res
 			    });	    
 			});
 		}, function(err) {
-		     res.redirect('/players/list');
+		     res.redirect('/players');
 	    });	
 	});
 });

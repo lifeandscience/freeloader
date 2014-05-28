@@ -318,7 +318,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 	        } else {
 		    	console.log("All Experimonths have been processed. This job is complete.");  
 	        }
-	        res.redirect('/groups/list');
+	        res.redirect('/groups');
 	    });
 	
 	});

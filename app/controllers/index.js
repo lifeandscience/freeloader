@@ -1,34 +1,33 @@
 var mongoose = require('mongoose');
-var Player = mongoose.model('Player');
+var auth = require('./auth');
 
-app.get('/', function(req, res){
-	Player.count(function(err, numPlayers){
-		res.render('index', { title: 'Freeloader', player: req.player, numPlayers: numPlayers, pointsToInvest: config.pointsToInvest });
-	});
+var appTitle = "Freeloader";
+
+app.get('/', auth.authorize(), function(req, res){
+	if(req.user && req.user.active){
+		if(req.user.experimonths){
+			for(var i = 0; i < req.user.experimonths.length; i++){
+				if(req.user.experimonths[i].kind.toString() == auth.clientID){
+					// Found that the user is in an Experimonth with this Kind
+					return res.redirect('/play');
+				}
+			}
+		}
+	}
+	res.render('index', { title: appTitle });
 });
 
-app.post('/', function(req, res){
-		// handle the post
-		if(!req.player){
-			console.log("ERROR: Unable to save user's choice because req.player is null");
-			return res.redirect('/login');
-		}
+app.post('/setExperimonth', function(req, res){
+	if(req.body && req.body.experimonth) {
+		req.session.experimonth.current = req.body.experimonth;
+	}
+	res.redirect('/');	
+});
 
-		req.player.todaysAction = req.body.action || null;
-		req.player.defaultAction = req.body.makeDefault ? req.body.action : null;
-		
-		if(req.body.action == 'invest' && req.player.balance < config.pointsToInvest){
-			req.flash('error', 'You don\'t have enough points to invest. <p>You must have at least ' + config.pointsToInvest + ' points to invest. \
-						You have ' + req.player.balance + ' points.</p>');
-			return res.redirect('/');
-		}
-		
-		req.player.save(function(err){
-			if(err){
-				req.flash('error', err);
-			} else {
-				req.flash('success', 'Your choice was saved successfully!');
-			}
-			res.redirect('/');
-		});
+app.get('/error', function(req, res){
+	var userId = null;
+	if(req && req.session) {
+		userId = req.user ? req.user._id : null;
+	}
+	res.render('index', { title: appTitle, remote_user: userId, hasError: true });
 });

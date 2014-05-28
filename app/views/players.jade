@@ -1,13 +1,11 @@
-extends ../layout
-
-- var sayHi = function() { alert('hi'); }
+extends layout
 
 block body
 	#container-inner
 		h1 #{title} (#{players.length})
 			
 		if (players.length > 0)
-			table.playerslist
+			table.playerslist(style='width:100%;')
 				thead
 					tr
 						th Balance
@@ -31,22 +29,18 @@ block body
 		else
 			p There are no players yet.
 			
-		
-		u = user()
 
-		- if(u && u.role >= 10)
-	
-			h1 Simulate Players
-			
-				div 
-					a.btn(href="/players/simulate/create/2/") Create (2) Simulated Players
-					a.btn(href="/players/simulate/create/9/") Create (9) Simulated Players
-					a.btn(href="/players/simulate/create/33/") Create (33) Simulated Players
-				div
-					a.btn(href="/players/simulate/newactions") Change Actions for all Players
-	
-				div
-					a.btn(href="/players/simulate/deleteall") Delete All Players
-					
-			
-					
+		h1 Simulate Players
+		
+			div 
+				a.btn(href="/players/simulate/create/2/") Create (2) Simulated Players
+				a.btn(href="/players/simulate/create/9/") Create (9) Simulated Players
+				a.btn(href="/players/simulate/create/33/") Create (33) Simulated Players
+			div
+				a.btn(href="/players/simulate/newactions") Change Actions for all Players
+
+			div
+				a.btn(href="/players/simulate/deleteall") Delete All Players
+				
+		
+				
