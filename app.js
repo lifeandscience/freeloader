@@ -106,6 +106,10 @@ app.configure(function(){
 					{
 						'name': 'Run Nightly Script',
 						'link': _BASEURL + '/nightly'
+					},
+					{
+						'name': 'Reset',
+						'link': _BASEURL + '/reset'
 					}
 				]
 			});

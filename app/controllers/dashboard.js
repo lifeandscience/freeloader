@@ -39,20 +39,20 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 				console.log("Error: No player exists for remote_user: " + userId + " (New registration, probably)");
 				req.flash('info', 'Thank you for enrolling in this experimonth. The game will begin tomorrow.');
 				res.render('dashboard', args);
-			}
-			else {
+			}else{
 				currentPlayer = players[0];
+				args.currentExperimonthId = currentExperimonthId;
 				args.currentPlayer = currentPlayer;
 				args.pointsToInvest = config.pointsToInvest;
 				args.numPlayers = players.length;
-				
+
 				res.render('dashboard', args);
 			}
 		});
 	}
 	else {
 		//No Experimonth (or no userId)
-		res.render('dashboard', args);	
+		res.render('dashboard', args);
 	}
 
 });

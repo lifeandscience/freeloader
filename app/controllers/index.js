@@ -1,5 +1,7 @@
 var mongoose = require('mongoose');
 var auth = require('./auth');
+var Group = mongoose.model('Group');
+var Player = mongoose.model('Player');
 
 var appTitle = "Freeloader";
 
@@ -30,4 +32,23 @@ app.get('/error', function(req, res){
 		userId = req.user ? req.user._id : null;
 	}
 	res.render('index', { title: appTitle, remote_user: userId, hasError: true });
+});
+
+app.get('/reset', function(req, res){
+	Group.remove(function(err){
+		if(err){
+			req.flash('error', 'Error removing all groups!');
+			res.redirect('/');
+			return;
+		}
+		Player.remove(function(err){
+			if(err){
+				req.flash('error', 'Error removing all players!');
+				res.redirect('/');
+				return;
+			}
+			req.flash('error', 'Successfully reset!');
+			res.redirect('/');
+		});
+	});
 });

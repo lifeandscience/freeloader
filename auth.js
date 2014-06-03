@@ -16,6 +16,43 @@ var mongoose = require('mongoose')
 var client_access_token = null
   , requestCache = {};
 
+var setPrimaryExperimonth = function(req, memberships) {
+	if(!req.session.experimonth) req.session.experimonth = {};
+	if(memberships.length === 1) {
+		req.session.experimonth.current = memberships[0]._id;
+	}
+	req.session.experimonth.memberships = memberships;
+};
+
+var populatePlayer = function(auth, req, res, next){
+	//Determine which experimonths (of this kind) the current remote_user is enrolled in.
+	auth.doAuthServerClientRequest('GET', '/api/1/experimonths/activeByKind/' + auth.clientID, null, function(err, experimonths){
+		if(experimonths) {
+			var memberships = []; //array of *active* experimonth ids that this user is a member of
+			for(var x=0; x < experimonths.length; x++) {
+				var month = experimonths[x];
+				inner: for(var y=0; y < month.users.length; y++) {
+					var uid = month.users[y]._id;
+					if(uid === req.user._id) {
+						memberships.push(month);
+						break inner;
+					}
+				}
+			}
+			if(memberships.length) {
+				setPrimaryExperimonth(req, memberships);	
+			} else {
+				if(req.session.experimonth) {
+					req.session.experimonth.current = null;
+					req.session.experimonth.memberships = null;
+				}
+				req.flash('info', 'You are not a member of any active experimonths. Please visit your Profile and ensure that you are enrolled in this experimonth. You may need to accept the agreement before your enrollment becomes active.');
+			}
+		}
+		return next();
+	});
+};
+
 module.exports = {
 	clientID: credentials.clientID
 	// This is for doing a request to the auth server by the client (not on behalf of a user)
@@ -66,44 +103,7 @@ module.exports = {
 		gotAccessToken();
 	}
   , setup: function(app){
-  		var $this = this;
-  		
-  		var setPrimaryExperimonth = function(req, memberships) {
-	  		if(!req.session.experimonth) req.session.experimonth = {};
-  			if(memberships.length === 1) {
-	  			req.session.experimonth.current = memberships[0]._id;
-  			}
-  			req.session.experimonth.memberships = memberships;
-  		};
-
-		var populatePlayer = function(req, res, next){
-			//Determine which experimonths (of this kind) the current remote_user is enrolled in.
-			$this.doAuthServerClientRequest('GET', '/api/1/experimonths/activeByKind/' + $this.clientID, null, function(err, experimonths){
-				if(experimonths) {
-					var memberships = []; //array of *active* experimonth ids that this user is a member of
-					for(var x=0; x < experimonths.length; x++) {
-						var month = experimonths[x];
-						inner: for(var y=0; y < month.users.length; y++) {
-							var uid = month.users[y]._id;
-							if(uid === req.user._id) {
-								memberships.push(month);
-								break inner;
-							}
-						}
-					}
-					if(memberships.length) {
-						setPrimaryExperimonth(req, memberships);	
-					} else {
-						if(req.session.experimonth) {
-							req.session.experimonth.current = null;
-							req.session.experimonth.memberships = null;							
-						}
-						req.flash('info', 'You are not a member of any active experimonths. Please visit your Profile and ensure that you are enrolled in this experimonth. You may need to accept the agreement before your enrollment becomes active.');
-					}
-				}
-				return next();
-			});
-		};
+		var $this = this;
 		app.use(function(req, res, next){
 			if(req.session.token){
 				if(!req.user){
@@ -125,10 +125,10 @@ module.exports = {
 							return next(new Error('Error retrieving user information: '+body.error));
 						}
 						req.user = body.user;
-						return populatePlayer(req, res, next);
+						return populatePlayer($this, req, res, next);
 					});
 				}
- 				return populatePlayer(req, res, next);
+				return populatePlayer($this, req, res, next);
 			}
 			return next();
 		});

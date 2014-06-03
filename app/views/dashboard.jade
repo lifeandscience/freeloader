@@ -6,12 +6,15 @@ block body
 		var currentExperimonthId = '#{currentExperimonthId}';
 		
 	#container-inner
-		h1 Welcome to Freeloader.
+		h1 Welcome to Freeloader
 		- if (hasError)	
 			h2.error An error occurred. Please check the console log.
 
+		if locals.currentPlayer
+			h3 Your balance is $#{currentPlayer.balance}.
+
 		- if (memberships)
-			if (!currentExperimonthId)
+			if (!locals.currentExperimonthId)
 				h4 You must choose an experimonth to continue.
 			#month-selector
 				form(action='/setExperimonth',method='post')
@@ -19,44 +22,45 @@ block body
 						select(name='experimonth')
 							option(value='')
 							each month in memberships
-								- var select=null; if (month._id == currentExperimonthId) select='selected';
+								- var select=null; if (month._id == locals.currentExperimonthId) select='selected';
 								option(value=month._id, selected=select)= month.name
 						input(type='submit',value='Save')
 
-		.decision-form
-			h3 What will you do today?
-			form(action="/play", method="post")
-				label.checkbox
-					input(type="checkbox", name="makeDefault")
-					small Make this decision my default
-				button.btn.btn-default.popover-trigger(
-							type="submit", 
-							name="action", 
-							value="invest", 
-							class=(currentPlayer.todaysAction == 'invest' ? 'btn-primary' : ''), 
-							data-content="You will invest #{pointsToInvest} points and receive a portion of the combined proceeds."
-					) 
-					| Invest 
-					b.icon.icon-info-sign
-				
-				
-				button.btn.btn-default.popover-trigger(
-							type="submit", 
-							name="action", 
-							value="freeload", 
-							class=(currentPlayer.todaysAction == 'freeload' ? 'btn-primary' : ''), 
-							data-content="You will not invest any points, but will receive a portion of the proceeds."
-					)  
-					| Freeload  
-					b.icon.icon-info-sign
-				
-				if(numPlayers > 15)
-					button.btn-default.btn.popover-trigger(
+		- if (locals.currentExperimonthId)
+			.decision-form
+				h3 What will you do today?
+				form(action="/play", method="post")
+					label.checkbox
+						input(type="checkbox", name="makeDefault")
+						small Make this decision my default
+					button.btn.btn-default.popover-trigger(
 								type="submit", 
 								name="action", 
-								value="leavegroup", 
-								class=(currentPlayer.todaysAction == 'leavegroup' ? 'btn-primary' : ''), 
-								data-content="You will leave this group and be re-assigned a new group for tomorrow."
-						)  
-						| Leave Group 
+								value="invest", 
+								class=(locals.currentPlayer && currentPlayer.todaysAction == 'invest' ? 'btn-primary' : ''), 
+								data-content="You will invest #{pointsToInvest} points and receive a portion of the combined proceeds."
+						) 
+						| Invest 
 						b.icon.icon-info-sign
+					
+					
+					button.btn.btn-default.popover-trigger(
+								type="submit", 
+								name="action", 
+								value="freeload", 
+								class=(locals.currentPlayer && currentPlayer.todaysAction == 'freeload' ? 'btn-primary' : ''), 
+								data-content="You will not invest any points, but will receive a portion of the proceeds."
+						)  
+						| Freeload  
+						b.icon.icon-info-sign
+					
+					if(locals.numPlayers > 15)
+						button.btn-default.btn.popover-trigger(
+									type="submit", 
+									name="action", 
+									value="leavegroup", 
+									class=(locals.currentPlayer && currentPlayer.todaysAction == 'leavegroup' ? 'btn-primary' : ''), 
+									data-content="You will leave this group and be re-assigned a new group for tomorrow."
+							)  
+							| Leave Group 
+							b.icon.icon-info-sign
