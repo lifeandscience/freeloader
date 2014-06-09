@@ -4,8 +4,8 @@ html {
 }
 body {
 	height: 100%;
-	background-color: #FFF;
-	color: #222;
+	background: #000 url('../images/bg-tile.png') repeat top left;
+	color: #efefef;
 	font-family: Helvetica, Arial, sans-serif;
 	
 	> .container {
@@ -14,11 +14,34 @@ body {
 		overflow: scroll;
 		
 		> #container-inner {
-			width: 1200px;
 			margin: 0 auto;
-			padding-bottom: 60px;
+			width: 914px;
+			height: 570px;
+			background: transparent url('../images/scene-bg.png') no-repeat top left;
+			position: relative;
+			
+			/* temporary */
+			padding-top: 600px;
 		}
 	}
+}
+
+h1.gameTitle {
+	position: absolute;
+	top: 0px;
+	left: 40px;
+	font-size: 18px;
+	color: #00a6df;
+	text-transform: uppercase;
+}
+
+div.cursor {
+	position: absolute;
+	top: 18px;
+	left: 170px;
+	height: 25px;
+	width: 2px;
+	background-color: #fff;
 }
 
 h1 {
