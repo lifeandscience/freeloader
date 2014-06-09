@@ -7,407 +7,459 @@ var _ = require('underscore');
 var async = require('async');
 
 app.get('/nightly', auth.authorize(2, 10), function(req, res){
+	
+	// When the nightly script runs, we need to do the following:
+	//  1 Ask the auth server for every experimonth and, for each: 
+	//  2	Check for players here in this experimonth that don't exist in the list of players from the auth server.
+	//  3		These are players who were unenrolled at the auth server in the past day. Set their action to 'walkaway', but also note that they shouldn't be re-grouped later
+	//  4			(call them 'deserters')
+	//  5	Find all the groups within this experimonth and, for each:
+	//  6		Keep a handle on this group for later assessment
+	//  7		Find players who chose to walkaway and remove them from their groups, but store them and the ID of their former group for later usage (call them 'walkaways')
+	//  8		If every player chose to freeload, dissolve this group, reset each player's point value to zero (OR delete them?), and un-enroll them at the auth server (Trello Card #15)
+	//  9			Also, store these now un-enrolled player  (call them 'moochers')
+	// 10		Process the actions of the remaining players, handling investments and freeloading
+	// 11		If this group has < 3 members, dissolve it
+	// 12			(call the leftover members 'abandonees')
+	// 13			For each walkaway that caused this group to be dissolved, remember the set of abandonees
+	// 14	Check each player in the experimonth exists here in Freeloader and *doesn't* exist in 'deserters'
+	// 15		If not, add them
+	// 16			Also, note this collection (call them 'newbies')
+	// 17	Now we have 'walkaways' (who should be added to groups, but not the group they were just in), 'newbies' who should be added to any group, and 'abandonees'
+	// 18		If (there are more than 2 groups or the optimal number of groups is > 2 and there are enough walkaways + newbies to create a new group):
+	// 19			Evenly allocate all abandonees across existing groups 
+	// 20		Else: (i.e. (there are 2 groups and the optimal number of groups is 2 and the number of walkaways + the number of newbies is < 3) OR there is only 1 group  (and we expect 2+ groups total)
+	// 21			Add all abandonees who came from the same group to one group (therefore this allows for one other group to add the walkaway to) 
+	// 22
+	// 23		While number of walkaways + number of newbies is > 3 AND the total number of groups is less than the optimal number (total number of players / 10):
+	// 24			Create a new group with three walkaways (preferably) and/or newbies
+	// 25		For each walkaway:
+	// 26			Check the average size of all the groups
+	// 27			Find a group which is smaller than average and that doesn't contain any abandonees related to this walkaway and add this walkaway to that group.
+	// 28		For each newbie:
+	// 29			Check the average size of all the groups
+	// 30			Find a group which is smaller than average and add this newbie to that group
+	// 31		For each deserter:
+	// 32			Delete their player profile (therefore giving them a zero balance)
+	// 33		For each moocher:
+	// 34			Delete their player profile (therefore giving them a zero balance)
+	// 35			Tell the auth server to un-enroll them from this experimonth
+
 
 	//Turn verbose logging on/off
 	var V = true;
 	
 	if(V) console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++");
 	
+	// 1 Ask the auth server for every experimonth and, for each ...
 	auth.doAuthServerClientRequest('GET', '/api/1/experimonths/activeByKind/'+auth.clientID, null, function(err, experimonths){
+		if(V) console.log('got experimonths: ', err, experimonths);
 	
 		//Run the nightly cron for each active experimonth
 		async.eachSeries(experimonths, function(experimonth, nextMonth) {
 			if(V) console.log("Now processing experimonth id: " + experimonth._id);
-	
-			//Check to see if each user has an associated player. 
-			//Note: A single auth user has an associated player for each experimonth
-			if(experimonth.users && experimonth.users.length) {
+
+			var authServerUserMap = {};
+			// Let's store this authServerUserMap in case we need it later
+			_.each(experimonth.users, function(user){
+				authServerUserMap[user._id.toString()] = user;
+			});
 			
-				if(V) console.log("See if we need to create any players for new users.");        
-				async.eachLimit(experimonth.users, 5, function(user, nextUser) {
-			        //Okay, let's try to find a matching player in this experimonth
-					Player.find({ remote_user: user._id }).exec(function(err, players){
-						var matchingPlayer = null;
-						if(players && players.length){
-							if(V) console.log("Found (" + players.length + ") potential players matching user id: " + user._id);
-							_.each(players, function(player) {
-								if(player.experimonth == experimonth._id.toString()) {
-									matchingPlayer = player;
-									nextUser();
-								}		
-							});
+			// Get currently known players in this experimonth:
+			Player.find({ experimonth: experimonth._id }).exec(function(err, players){
+				if(!_.isArray(players)){
+					if(V) console.log('No players', err, players);
+					players = [];
+				}
+				
+				if(V) console.log('Found all players, total of: ', players.length);
+				
+				var enrolledPlayerMap = {},
+					groupMap = {},
+					deserters = [],
+					walkaways = [],
+					moochers = [],
+					abandonees = [],
+					newbies = [],
+					groupWalkaways = {};
+				// Let's store this playerMap in case we need it later
+				_.each(players, function(player){
+					enrolledPlayerMap[player.remote_user] = player;
+					var group = player.group;
+					if(group){
+						group = group.toString();
+					}else{
+						group = 'null';
+					}
+					if(!groupMap[group]){
+						groupMap[group] = {
+							players: [],
+							group: group
+						};
+					}
+					groupMap[group].players.push(player);
+
+					//  2	Check for players here in this experimonth that don't exist in the list of players from the auth server.
+					if(!authServerUserMap[player.remote_user]){
+						if(V) console.log('Found a player who was un-enrolled at the auth server (deserter): ', player);
+						//  3		These are players who were unenrolled at the auth server in the past day. Set their action to 'walkaway', but also note that they shouldn't be re-grouped later
+						//  4			(call them 'deserters')
+						deserters.push(player);
+						player.todaysAction = 'walkaway';
+					}
+				});
+				
+				var pickSmallestGroup = function(groupIDsToIgnore){
+					if(!groupIDsToIgnore){
+						groupIDsToIgnore = [];
+					}
+					if(V) console.log('Picking the smallest group while ignoring: ', groupIDsToIgnore);
+					var smallest = Infinity;
+					var smallestGroupDetails = null;
+					_.each(groupMap, function(groupDetails, groupID){
+						if(groupDetails.players.length < smallest && groupIDsToIgnore.indexOf(groupID) === -1){
+							smallest = groupDetails.players.length;
+							smallestGroupDetails = groupDetails;
 						}
-						if(!matchingPlayer) {
-							//We need to create the player because they do not exist yet.
-							if(V) console.log("No matching players found for user id: " + user._id + ". Creating a new player.");
+					});
+					if(V) console.log('The smallest group is: ', smallestGroupDetails);
+					return smallestGroupDetails ? smallestGroupDetails.group : null;
+				};
+
+				//  5	Find all the groups within this experimonth and, for each:
+				Group.find({experimonth: experimonth._id}).exec(function(err, groups){
+					if(!_.isArray(groups)){
+						groups = [];
+					}
+					if(V) console.log('Found all existing groups within the experimonth: ', groups.length);
+
+					var groupsToDissolve = [];
+					async.each(groups, function(group, groupCallback){
+						var groupID = group._id.toString();
+						if(V) console.log('Checking on Group:', groupID);
+						//  6		Keep a handle on this group for later assessment
+						if(!groupMap[groupID]){
+							groupMap[groupID] = {
+								players: [],
+								group: groupID
+							};
+						}
+
+						//  7		Find players who chose to walkaway and remove them from their groups, but store them and the ID of their former group for later usage (call them 'walkaways')
+						groupMap[groupID].players = _.filter(groupMap[groupID].players, function(player){
+							if(!player.todaysAction) {
+								player.todaysAction = config.defaultAction ? config.defaultAction : (player.defaultAction ? player.defaultAction : null);
+							}
+							if(player.todaysAction == 'walkaway' && deserters.indexOf(player) === -1){
+								if(V) console.log('Found a walkaway!', player.remote_user);
+								walkaways.push(player);
+								return false;
+							}
+							return true;
+						});
+						
+						//  8		If every player chose to freeload, dissolve this group, reset each player's point value to zero (OR delete them?), and un-enroll them at the auth server (Trello Card #15)
+						var allFreeloaders = _.every(groupMap[groupID].players, function(player){
+							return player.todaysAction == 'freeload';
+						});
+						if(allFreeloaders){
+							if(V) console.log('This group had all freeloaders, so we\'re dissolving the group and adding these users to moochers');
+
+							//  9			Also, store these now un-enrolled player  (add them to 'moochers')
+							moochers = moochers.concat(groupMap[groupID].players);
+
+							// TODO: Dissolve the group
+							// Perhaps:
+							groupsToDissolve.push(group);
+							delete groupMap[groupID];
+
+							return groupCallback();
+						}
+
+						// 10		Process the actions of the remaining players, handling investments and freeloading
+						if(V) console.log('Handling the actions of players in this group.');
+						var numInGroup = groupMap[groupID].players.length;
+						var numInvesting = _.reduce(groupMap[groupID].players, function(memo, player){
+							return memo + (player.todaysAction == 'invest' ? 1 : 0);
+						}, 0);
+						var amountInvested = numInvesting * config.pointsToInvest;
+						var dividend = (amountInvested * 2) / numInGroup;
+						if(V) console.log('Total investment was ', numInvesting, 'players and therefore ', amountInvested, 'total. Dividends are therefore ', dividend, 'each, given', numInGroup, 'players.');
+						
+						async.each(groupMap[groupID].players, function(player, callback){
+							player.balance += dividend;
+							if(player.todaysAction == 'freeload'){
+								// Player gets their uninvested principal in addition to the dividend.
+								player.balance += config.pointsToInvest;
+							}
+							player.save(callback);
+						}, function(err){
+							if(err && V) console.log("There was an error saving a player :(", err);
+
+							// 11		If this group has < 3 members, dissolve it
+							// 12			(call the leftover members 'abandonees')
+							// 13			For each walkaway that caused this group to be dissolved, remember the set of abandonees
+							if(groupMap[groupID].players.length < 3 && _.size(groupMap) > 1){
+								_.each(groupMap[groupID].players, function(player){
+									abandonees.push(player);
+								});
+
+								// All the people in this group are now walkaways
+								groupWalkaways[groupID] = groupMap[groupID].players;
+
+								// TODO: Dissolve the group
+								// Perhaps:
+								groupsToDissolve.push(group);
+								delete groupMap[groupID];
+							}
+							return groupCallback();
+						}); // async.each(players)
+					}, function(err){ // async.each(groups)
+						if(err && V) console.log("There was an error iterating over a group", err);
+						
+						// 14	Check each player in the experimonth exists here in Freeloader and *doesn't* exist in 'deserters'
+						var newUsers = _.filter(authServerUserMap, function(user, userID){
+							if(V) console.log('Assessing if this player is new:', userID);
+							if(V) console.log('New?', !enrolledPlayerMap[userID] ? 'YES' : 'NO');
+							return !enrolledPlayerMap[userID];
+						});
+						var newbies = [];
+						if(groupMap['null']){
+							if(V) console.log('There were players found in the DB that had a null group, so those are our first newbies', groupMap['null'].players);
+							newbies = groupMap['null'].players;
+						}
+						if(V) console.log('Found new users:', newUsers.length, 'from authServer, ', newbies.length, 'from un-grouped players in the DB (weird?)');
+						async.each(newUsers, function(user, newUserCallback){
+							// 15		If not, add them
+							// 16			Also, note this collection (call them 'newbies')
+							
+							if(V) console.log('No matching players found for user id: ', user._id, 'Creating a new player.');
 							matchingPlayer = new Player();
 							matchingPlayer.remote_user = user._id;
 							matchingPlayer.experimonth = experimonth._id;
 							matchingPlayer.balance = config.startingPoints;
-							matchingPlayer.save(function(err){
+							matchingPlayer.save(function(err, newPlayer){
 								if(err) console.log('Error saving new player: ', err);
-								if(V) console.log("New Player saved!");
-								nextUser(err);
-							});
-						}
-					});
-			        
-			    }, function(err) {
-			        if (err) return nextMonth(err);
-			        if(V) console.log("Okay, all new players are saved!");
-			        
-			        
-			        //Now that we have all of the latest players, do some more stuff (like create groups, calculate new balances, etc)
-			        
-			        
-			        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-			        
-			        //Get a list of all of the existing groups
-					Group.find({ experimonth: experimonth._id }).exec(function(err, groups){
-					
-						var num_groups = 0;
-						var GROUP_MAP = {};
-						_.each(groups, function(group) {
-							num_groups++;
-							GROUP_MAP[group._id] = group;
-						});
-						if(V) console.log("There are (" + num_groups + ") existing groups for this Experimonth.");
-					
-						Player.find({ experimonth: experimonth._id }).exec(function(err, players){
-						
-							var num_players = 0;
-							var new_players = []; //Players added today, not assigned a group yet.
-							var players_leaving_group = [];
-							_.each(players, function(player) {
-								num_players++;
-				
-								//Special case where the assigned group does not exist anymore
-								if(player.group && !GROUP_MAP[player.group]) {
-									//Group does not exist anymore. Reset it.
-									player.group = null;
-								}
+								if(V) console.log('New Player saved!');
 								
-								// Find all new players without a group.
-								if(!player.group) {
-									new_players.push(player);
-								}
-								
-								// Find all existing players who are leaving their group.
-								if(player.group && player.todaysAction == "leavegroup") {
-									players_leaving_group.push(player);
-								}
+								newbies.push(newPlayer);
+								newUserCallback(err);
 							});
-							if(V) console.log("There are (" + num_players + ") players for this Experimonth.");
-							if(V) console.log("There are (" + new_players.length + ") new players that need a group.");
-							if(V) console.log("There are (" + players_leaving_group.length + ") existing players that want to leave their group.");
-				
-							// Compute the total number of groups we need.
-							var num_groups_needed = Math.floor(num_players / 10);
-							if(num_groups_needed === 0) num_groups_needed = 1; //need at least 1 group!
-				
-							//Create more group(s) if needed
-							if(num_groups_needed > num_groups) {
-								if(V) console.log("Based on the number of players we have, we need to create (" + (num_groups_needed - num_groups) + ") new groups.");
-								var newGroups = [];
-								for(var x=num_groups; x < num_groups_needed; x++) {
+						}, function(err){
+							if(err) console.log('Error iterating over new users: ', err);
+							if(V) console.log('New users iterated!');
+							
+							// 17	Now we have 'walkaways' (who should be added to groups, but not the group they were just in), 'newbies' who should be added to any group, and 'abandonees'
+							var optimalNumberOfGroups = Math.round(experimonth.users.length / 10);
+							if(optimalNumberOfGroups < config.minimumNumberOfGroups){
+								optimalNumberOfGroups = config.minimumNumberOfGroups;
+							}
+							
+							var placementMap = {};
+							if(V) console.log('Dealing with ', abandonees.length, 'abandonees.');
+							if(abandonees.length > 0){
+								if(V) console.log('For reference, there are ', _.size(groupMap), 'groups and ', optimalNumberOfGroups, 'groups desired and ', walkaways.length, 'walkaways and ', newbies.length, 'newbies.');
+								if(_.size(groupMap) > 2 || (optimalNumberOfGroups > 2 && (walkaways.length + newbies.length > config.minimumGroupSize))){
+									// 18		If (there are more than 2 groups or the optimal number of groups is > 2 and there are enough walkaways + newbies to create a new group):
+									// 19			Evenly allocate all abandonees across existing groups 
+									_.each(abandonees, function(abandonee){
+										var groupDetails = pickSmallestGroup([]);
+										if(groupDetails){
+											abandonee.group = groupDetails.group;
+											placementMap[abandonee._id.toString()] = abandonee.group;
+											abandonee.save(function(err){
+												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
+												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
+											});
+										}
+									}); // _.each(abandonees)
+								}else{
+									// 20		Else: (i.e. (there are 2 groups and the optimal number of groups is 2 and the number of walkaways + the number of newbies is < 3) OR there is only 1 group  (and we expect 2+ groups total)
+									// 21			Add all abandonees who came from the same group to one group (therefore this allows for one other group to add the walkaway to) 
+									var placementMatchupMap = {};
+									_.each(abandonees, function(abandonee){
+										if(placementMatchupMap[abandonee.group]){
+											// Another abandonee from the same group has already been placed somewhere.
+											// Place this abandonee in the same group, leaving the other group for the walkaway player
+											abandonee.group = placementMatchupMap[abandonee.group];
+											placementMap[abandonee._id.toString()] = abandonee.group;
+											abandonee.save(function(err){
+												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
+												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
+											});
+										}else{
+											var smallestGroupDetails = pickSmallestGroup([]);
+											placementMatchupMap[abandonee.group] = smallestGroupDetails.group;
+											abandonee.group = smallestGroupDetails.group;
+											placementMap[abandonee._id.toString()] = abandonee.group;
+											abandonee.save(function(err){
+												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
+												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
+											});
+										}
+									}); // _.each(abandonees)
+								}
+							} // abandonees.length > 0
+							
+							// Now that we're here, let's just handle the groupsToDissolve real fast
+							async.each(groupsToDissolve, function(groupToDissolve, groupToDissolveCallback){
+								groupToDissolve.remove(groupToDissolveCallback);
+							}, function(err){
+							
+								// 22
+								// 23		While number of walkaways + number of newbies is > 3 AND the total number of groups is less than the optimal number (total number of players / 10):
+								if(V) console.log('Putting walkaways and newbies into new groups');
+								// Should we make new groups?
+								async.whilst(function(){
+									if(V) console.log('Checking if we should create new groups:');
+									if(V) console.log('Walkaways: ', walkaways.length, 'Newbies:', newbies.length, 'Minimum Group Size:', config.minimumGroupSize, 'Number of Groups:', _.size(groupMap), 'Optimal number of groups:', optimalNumberOfGroups);
+									return (walkaways.length > 0 || newbies.length > 0) && (_.size(groupMap) < 2 || ((walkaways.length + newbies.length > config.minimumGroupSize) && (_.size(groupMap) < optimalNumberOfGroups)));
+								}, function(whilstCallback){
+									// 24			Create a new group with three walkaways (preferably) and/or newbies
+									
 									if(V) console.log("Creating a new group");
 									var group = new Group();
 									group.experimonth = experimonth._id;
-									group.save(function(err){
-										if(err){
-											console.log('error saving group: ', err);
-										}
+									group.save(function(err, group){
+										if(err) console.log('error saving group: ', err);
 										if(V) console.log("New group saved!");
-									});	
-									//Manually add our group the the groups array and group map
-									groups.push(group);
-									GROUP_MAP[group.id] = group;
-									newGroups.push(group);
-									num_groups++;
-								}
-								if(V) console.log("There were (" + newGroups.length + ") new groups created.");
-								//Put all of the players leaving a group into the new group(s).
-								if(newGroups.length === 1) {
-									_.each(players_leaving_group, function(p) {
-										GROUP_MAP[p.group].num_players--; //user leaves old group	
-										p.group = newGroups[0]._id;
-										newGroups[0].num_players++; //user joins new group
-										p.save(function(err){
-											if(err){
-												console.log('Error saving player after new group assignment: ', err);
+
+										var groupID = group._id.toString();
+										groupMap[groupID] = {
+											players: [],
+											group: groupID
+										};
+
+										var i = 0;
+										async.whilst(function(){
+											return i < config.minimumGroupSize && (walkaways.length > 0 || newbies.length > 0);
+										}, function(callback){
+											var player = null;
+											if(V) console.log('looking for a player in the walkaways or newbies: ', walkaways.length, 'walkaways,', newbies.length, 'newbies');
+											if(walkaways.length > 0){
+												player = walkaways.shift();
+											}else if(newbies.length > 0){
+												player = newbies.shift();
 											}
+											if(V) console.log('got player:', player);
+											if(player){
+												player.group = group._id;
+												groupMap[groupID].players.push(player);
+												i++;
+												player.save(callback);
+											}else{
+												if(V) console.log('Didn\'t find a player to add to the group!');
+												callback('no valid player found to add to the group :(');
+											}
+										}, function(err){
+											if(err) console.log('error while loading up the players into the group!', err);
+											if(V) console.log('Done adding players to new group!');
+											whilstCallback();
 										});
 									});
-									players_leaving_group = [];
-								}
-								else if(newGroups.length > 1) {
-									//TODO: This is hard.
-								
-								}
-								//Now save all of the groups (even existing ones since we may have decremented their counts)
-								//Note: These saves my not finish before we enter the whilst loop, but it's important to save all groups
-								//		now in case we don't actually run through the whilst loop (because there are no more users to process)
-								async.eachLimit(groups, 5, function(group, nextGroup) {
-									group.save(function(err){
-										if(err){
-											console.log('Error saving group after updating num_player count: ', err);
-										}
-										nextGroup(err);
-									});								
-								}, function(err) {
-							        if(err){
-								    	console.log("An error occurred while trying to save the groups.");
-							        } 
-							        if(V) console.log("Finished new group creation and assigned players who wish to leave their group to a new group (if applicable).");
-							    });
-							}
-							async.whilst(
-							    function () {
-							    	return (new_players.length || players_leaving_group.length); 
-							    },
-							    function (nextPass) {
-							        async.eachLimit(groups, 5, function(group, nextGroup) {
-					
-										//Try to add a new player to this group
-										if(new_players.length > 0) {
-											var p = new_players.pop();
-											p.group = group;
-											group.num_players++;
-										} else if(players_leaving_group.length > 0) {
+								}, function(err){
+									if(V) console.log('Handling the rest of the walkaways (', walkaways.length, ')');
+									// 25		For each walkaway:
+									async.eachSeries(walkaways, function(walkaway, walkawayCallback){
+										// 26			Check the average size of all the groups
+										// 27			Find a group which is smaller than average and that doesn't contain any abandonees related to this walkaway and which isn't the group from which this player walked away from and add this walkaway to that group.
+										var groupsToIgnore = [walkaway.group];
+										var playersToAvoid = groupWalkaways[walkaway.group];
+										_.each(playersToAvoid, function(player){
+											if(placementMap[player._id.toString()]){
+												groupsToAvoid.push(placementMap[player._id.toString()]);
+											}
+										});
 										
-											//No new players, try an existing player
-											var p = players_leaving_group.pop();
-											//Check to make sure this player isn't trying to leave this group.
-											if(p.group.toString() == group._id.toString()) {
-												//Push this player back onto the array since this is the same group. Will be assigned a new group later
-												players_leaving_group.push(p);
-											} else {
-												//We're good. Update player counts and associate new group to player
-												GROUP_MAP[p.group].num_players--; //user leaves old group	
-												p.group = group._id;
-												group.num_players++; //user joins new group
-											}
-										}
-										group.save(function(err){
-											if(err){
-												console.log('Error saving group after updating num_player count: ', err);
-												nextGroup(err);
-											}
-											//Now save the player, if applicable						
-											if(p) {
-												p.save(function(err){
-													if(err){
-														console.log('Error saving player after new group assignment: ', err);
-													}
-													nextGroup(err);
-												});
-											} else {
-												nextGroup();
-											}
-										});
-					
-									}, function(err) {
-								        if(err){
-									    	console.log("An error occurred while trying to assign players to a group.");
-								        } 
-								        if(V) console.log("Finished pass of all groups looking for places to put users. Checking to see if another pass is needed.");
-								        if(V) console.log("Remaining players to be assigned: " + new_players.length + " (new) and " + players_leaving_group.length + " (leaving)");
-								        nextPass(err);
-								    });
-							    },
-							    function (err) {
-							    	if(err) {
-								    	console.log("An error occurred while trying to process the list of players needing a new group.", err);
-							    	}
-							        if(V) console.log("Finished processing players that needed a group.");
-							        
-							        
-							        // Check to see if any groups have less than 3 players. If they do, just delete them.
-									// Note: If we have less than 15 total players, we will only have a single group so this does not apply.
-									if(num_players > 15) {
-										if(V) console.log("Check to see if any groups have less than 3 members. If so, remove that group and reassign players.");
-										var eligibleGroups = [];
-										_.each(groups, function(group, index) {
-											if(group.num_players < 3) {
-												//Delete this group (mongo, groups array, and GROUP_MAP)
-												GROUP_MAP[group._id] = null;
-												if(V) console.log("Removing a group with less than 3 members. Group ID: " + group._id + " and index: " + index);
-												group.remove(function(err){
-													if(err){
-														console.log('Error removing group: ', err);
-													}
-													groups.splice(index,1);
-												});
-											} else {
-												eligibleGroups.push(group);
-											}
-										});
-										//Now, reassign users who were just booted out of their group of < 3 players
-										//Note: use eachSeries here so that the group num_players value does not get out of sync if group saves are processed out of order or delayed.
-										async.eachSeries(players, function(player, nextPlayer) {
-											if(player.group && !GROUP_MAP[player.group]) {
-												//Choose a random group to place this player in.
-												var index = _.random(0, eligibleGroups.length - 1);
-												player.group = eligibleGroups[index]._id;
-												eligibleGroups[index].num_players++;
-												eligibleGroups[index].save(function(err){
-													if(err){
-														console.log('Error saving group: ', err);
-													}
-													nextPlayer(err);
-												});
-												player.save(function(err){
-													if(err){
-														console.log('Error saving player: ', err);
-													}
-												});
-											} else {
-												nextPlayer();
-											}
-											
-										}, function(err) {
-									        if (err) {
-										        console.log("An error occurred trying to reassign users booted from a group with < 3 players");
-									        }
-									        
-									        //We are completely finished with group assignments.
-									        if(V) console.log("Group assignments are finished.");
-									        if(V) console.log("Starting to process player actions and update balances");
-									        
-									        updateActionsAndBalances(groups, players, function(err) {
-												if(err) console.log("An error occurred while trying to update actions and balances.", err);
-											    //Process the next experimonth
-												nextMonth();
-
+										var smallestGroupDetails = pickSmallestGroup(groupsToIgnore);
+										if(smallestGroupDetails){
+											walkaway.group = smallestGroupDetails.group;
+											placementMap[walkaway._id.toString()] = walkaway.group;
+											walkaway.save(function(err){
+												if(err) console.log('Error putting walkaway into existing group :(', smallestGroupDetails.group);
+												else if(V) console.log('Walkaway put into existing group!', smallestGroupDetails.group);
+												walkawayCallback(err);
 											});
-									        
-									    });
-										
-									} else { // less than 15 total players
-										
-										//We are completely finished with group assignments.
-								        if(V) console.log("Group assignments are finished.");
-								        if(V) console.log("Starting to process player actions and update balances");
-								        
-								        updateActionsAndBalances(groups, players, function(err) {
-											if(err) console.log("An error occurred while trying to update actions and balances.", err);
-										    //Process the next experimonth
-											nextMonth();
+										}else{
+											console.log('Error putting walkaway into existing group :(', groupsToIgnore, groupMap);
+										}
+									}, function(err){
+										if(V) console.log('Handling the rest of the newbies (', newbies.length, ')');
+										// 28		For each newbie:
+										async.eachSeries(newbies, function(newbie, newbieCallback){
+											// 29			Check the average size of all the groups
+											// 30			Find a group which is smaller than average and add this newbie to that group
+											
+											var smallestGroupDetails = pickSmallestGroup([]);
+											if(smallestGroupDetails){
+												newbie.group = smallestGroupDetails.group;
+												placementMap[newbie._id.toString()] = newbie.group;
+												newbie.save(function(err){
+													if(err) console.log('Error putting newbie into existing group :(', smallestGroupDetails.group);
+													else if(V) console.log('Newbie put into existing group!', smallestGroupDetails.group);
+													newbieCallback(err);
+												});
+											}else{
+												console.log('Error putting newbie into existing group :(', [], groupMap);
+											}
+										}, function(err){
+											if(V) console.log('Deleting all the deserters');
+											// 31		For each deserter:
+											async.each(deserters, function(deserter, deserterCallback){
+												// 32			Delete their player profile (therefore giving them a zero balance)
+												deserter.remove(deserterCallback);
+											}, function(err){
+												if(V) console.log('Deleting and un-enrolling the moochers.');
+												// 33		For each moocher:
+												async.eachSeries(moochers, function(moocher, moocherCallback){
+													// 34			Delete their player profile (therefore giving them a zero balance)
+													// 35			Tell the auth server to un-enroll them from this experimonth
 
-										});
-										
-									}
-									   
-							    }
-							);	//end whilst()
-						}); //end Player.find();
-					}); //end Group.find();
-			        
-			        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++			        
+													auth.doAuthServerClientRequest('GET', '/api/1/experimonths/unenrollUser/'+experimonth._id+'/'+moocher.remote_user, null, function(err, experimonth){
+														if(err){
+															if(V) console.log('There was an error un-enrolling the user :(', err);
+															moocherCallback(err);
+															return;
+														}
+														moocher.remove(moocherCallback);
+													});
+												}, function(err){
+													
+													// Now that we're done with this Experimonth, let's set the num_players on each group.
+													Group.find({experimonth: experimonth._id}).exec(function(err, groups){
+														async.each(groups, function(group, callback){
+															Player.count({group: group._id}).exec(function(err, playerCount){
+																group.num_players = playerCount;
+																group.save(callback);
+															});
+														}, function(err){
+															if(err) console.log('There was an error while updating num_players on each group', err);
+															if(V) console.log('Finished with this month, moving to the next one.');
+															// We've theoretically finished with this Experimonth.
+															nextMonth(err);
+														}); // async.each(groups)
+													}); // Group.find
 
-			    });
-				
+												}); // async.each(moochers)
+											}); // async.each(deserters)
+										}); // async.eachSeries(newbies)
+									}); // async.eachSeries(walkaways)
+								}); // async.whilst
+							}); // async.each(groupsToDissolve)
+						}); // async.each(newUsers)
+					}); // async.each(groups)
+					
+				}); // Group.find().exec()
+			}); // Player.find().exec()
+		}, function(err) {
+			if (err) {
+				console.log("An error occurred trying to process the experimonths.");
 			} else {
-				if(V) console.log("This experimonth (" + experimonth._id + ") has no users. No processing required.");
-				nextMonth();
+				console.log("All Experimonths have been processed. This job is complete.");  
 			}
-	
-		}, function(err) {
-	        if (err) {
-		        console.log("An error occurred trying to process the experimonths.");
-	        } else {
-		    	console.log("All Experimonths have been processed. This job is complete.");  
-	        }
-	        res.redirect('/groups');
-	    });
-	
-	});
-
-	
-	var updateActionsAndBalances = function(groups, players, callback) {
-					
-		//Note: Processing as a series since performance is not critical and it's easy to follow the progress/logging this way.
-		async.eachSeries(groups, function(group, nextGroup) { 
-			if(V) console.log("Now processing group: " + group._id);
-	
-			var eligiblePlayers = [];
-			var dailyTotal = 0;
-			
-			async.eachLimit(players, 5, function(player, nextPlayer) {
-				//Only focus on players that are a member of this group.
-				if(player.group && player.group == group._id.toString()) {
-					
-					//If the player doesnt have an action for today, check for a default or else set to null (no action).
-					if(!player.todaysAction) {
-						player.todaysAction = player.defaultAction ? player.defaultAction : null;
-					}
-					if(player.todaysAction == "invest") {
-						dailyTotal += config.pointsToInvest;
-						eligiblePlayers.push(player);
-					} 
-					else if(player.todaysAction == "freeload") {
-						eligiblePlayers.push(player);
-						player.balance += config.pointsToInvest; //freeloaders bank this amount.
-					}
-					
-					//Update the actions now that we've processed them.
-					player.lastAction = player.todaysAction;
-					player.todaysAction = null;
-					player.save(function(err){
-						if(err) console.log('Error updating player actions and balance: ', err);
-						nextPlayer(err);
-					});
-				} else {
-					nextPlayer();
-				}
-				
-			}, function(err) {
-				if (err) console.log("An error occurred while trying to update all player actions for group: " + group._id);
-				if(V) console.log("All player actions have been updated for group: " + group._id);
-				
-				//Now that all group members have been processed and saved, double the total and compute all eligible players' shares.
-				dailyTotal = dailyTotal * 2;
-				var earnedAmount = dailyTotal / eligiblePlayers.length;
-				
-				if(!earnedAmount || earnedAmount <= 0) {
-					//No need to update balance. Either no eligible players and/or 100% freeloaders
-					if(V) console.log("Today's earned amount was $0. Number of eligible players: " + eligiblePlayers.length);
-					nextGroup();
-					
-				} else {
-				
-					//Loop eligiblePlayers again to update their balance w/ the earned amount from investing
-					if(V) console.log("Now it's time to update the balances with today's earned amount: " + earnedAmount);
-					async.eachLimit(eligiblePlayers, 5, function(player, nextEligiblePlayer) {
-						player.balance += earnedAmount;
-						player.save(function(err){
-							if(err) console.log('Error saving player balance: ', err);
-							//Notify user of earned amount and new balance
-							if(player.remote_user) {
-								player.notifyOfEarnedAmount(earnedAmount, player.balance, function(err, body) {
-									//On success, do nothing for now.
-								});
-							}
-							nextEligiblePlayer(err);
-						});
-					}, function(err) {
-					    if (err) console.log("An error occurred while trying to update eligible player balances.");
-					    if(V) console.log("All player balances have been updated.");
-					    nextGroup(err);
-					});					
-				}
-
-		    });
-								
-		}, function(err) {
-	        if (err) console.log("An error occurred while trying to update actions and balances for all groups.");
-	        if(V) console.log("All Groups have been processed. Actions reset and balances updated.");
-	        callback(err);
-	    });
-	
-	};
-
-	
+			res.redirect('/groups');
+		}); // async.eachSeries(experimonths)
+	}); // Auth Server Request for experimonths
 });
 
 

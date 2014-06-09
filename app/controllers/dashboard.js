@@ -88,11 +88,11 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 				currentPlayer.todaysAction = req.body.action || null;
 				currentPlayer.defaultAction = req.body.makeDefault ? req.body.action : null;
 				
-				if(req.body.action == 'invest' && currentPlayer.balance < config.pointsToInvest){
-					req.flash('error', 'You don\'t have enough points to invest. <p>You must have at least ' + config.pointsToInvest + ' points to invest. You have ' + currentPlayer.balance + ' points.</p>');
-					res.redirect('/');
-				}
-				else {
+				// if(req.body.action == 'invest' && currentPlayer.balance < config.pointsToInvest){
+				// 	req.flash('error', 'You don\'t have enough points to invest. <p>You must have at least ' + config.pointsToInvest + ' points to invest. You have ' + currentPlayer.balance + ' points.</p>');
+				// 	res.redirect('/');
+				// }
+				// else {
 					currentPlayer.save(function(err){
 						if(err){
 							console.log("Error: Unable to save action for remove_user: " + userId + " (Error: " + err + ")");
@@ -102,7 +102,7 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 						}
 						res.redirect('/');
 					});	
-				}
+				// }
 			}
 		});
 	}
