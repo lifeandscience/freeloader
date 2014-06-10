@@ -21,7 +21,8 @@ block body
 							td #{player.remote_user}
 							td #{player.group}
 							td #{player.experimonth}
-							td #{player.todaysAction ? player.todaysAction : player.defaultAction}
+							//td #{player.todaysAction ? player.todaysAction : player.defaultAction}
+							td #{player.todaysAction}
 							td 
 								a.btn(href="/players/edit/#{player._id}") Edit
 								

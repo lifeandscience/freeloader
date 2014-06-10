@@ -28,7 +28,7 @@ app.post('/players/edit/:player_id', auth.authorize(2, 10), function(req, res){
 	Player.find({ _id: req.params.player_id }).exec(function(err, players){
 		if(players && players.length > 0) {
 			var player = players[0];
-			_.each(['balance','todaysAction', 'defaultAction'], function(key, index){
+			_.each(['balance','todaysAction' /*, 'defaultAction'*/], function(key, index){
 				if(req.body[key]){
 					player[key] = req.body[key];
 				}

@@ -157,154 +157,61 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 						}
 
 						//  7		Find players who chose to walkaway and remove them from their groups, but store them and the ID of their former group for later usage (call them 'walkaways')
-						groupMap[groupID].players = _.filter(groupMap[groupID].players, function(player){
-							if(!player.todaysAction) {
-								player.todaysAction = config('defaultAction', experimonth._id, player.defaultAction || null);
-							}
-							if(player.todaysAction == 'walkaway' && deserters.indexOf(player) === -1){
-								if(V) console.log('Found a walkaway!', player.remote_user);
-								walkaways.push(player);
+						async.filter(groupMap[groupID].players, function(player, callback){
+							var afterCheckingAction = function(){
+								if(player.todaysAction == 'walkaway' && deserters.indexOf(player) === -1){
+									if(V) console.log('Found a walkaway!', player.remote_user);
+									walkaways.push(player);
 
-								// Tell the auth server that this user walked away
-								auth.doAuthServerClientRequest('POST', '/api/1/events', {
-									user: player.remote_user,
-									experimonth: experimonth._id,
-									client_id: process.env.CLIENT_ID,
-									name: 'freeloader:action',
-									value: 'walkaway'
-								}, function(err, body){
-									// TODO: Do something with the result? Or maybe not?
-								});
-
-								return false;
-							}
-							return true;
-						});
-						
-						//  8		If every player chose to freeload, dissolve this group, reset each player's point value to zero (OR delete them?), and un-enroll them at the auth server (Trello Card #15)
-						var allFreeloaders = _.every(groupMap[groupID].players, function(player){
-							// Only pass this check if moocherPenaltyEnabled is on
-							return config('moocherPenaltyEnabled', experimonth._id) && player.todaysAction == 'freeload';
-						});
-						if(allFreeloaders){
-							if(V) console.log('This group had all freeloaders, so we\'re dissolving the group and adding these users to moochers');
-							
-							async.each(groupMap[groupID].players, function(player, playerCallback){
-								// Tell the auth server that this group was full of moochers and we're dissolving the group
-								auth.doAuthServerClientRequest('POST', '/api/1/events', {
-									user: player.remote_user,
-									experimonth: experimonth._id,
-									client_id: process.env.CLIENT_ID,
-									name: 'freeloader:allPlayersMoochedSoDissolvingGroup',
-									value: groupID
-								}, function(err, body){
-									playerCallback(err);
-								});
-							}, function(err){
-								//  9			Also, store these now un-enrolled player  (add them to 'moochers')
-								moochers = moochers.concat(groupMap[groupID].players);
-
-								// TODO: Dissolve the group
-								// Perhaps:
-								groupsToDissolve.push(group);
-								delete groupMap[groupID];
-
-								return groupCallback();
-							});
-							return;
-						}
-
-						// 10		Process the actions of the remaining players, handling investments and freeloading
-						if(V) console.log('Handling the actions of players in this group.');
-						var numInGroup = groupMap[groupID].players.length;
-						var numInvesting = _.reduce(groupMap[groupID].players, function(memo, player){
-							return memo + (player.todaysAction == 'invest' ? 1 : 0);
-						}, 0);
-						var amountInvested = numInvesting * config('pointsToInvest', experimonth._id);
-						var dividend = (amountInvested * 2) / numInGroup;
-						if(V) console.log('Total investment was ', numInvesting, 'players and therefore ', amountInvested, 'total. Dividends are therefore ', dividend, 'each, given', numInGroup, 'players.');
-						
-						async.each(groupMap[groupID].players, function(player, callback){
-							player.balance += dividend;
-
-							// Tell the auth server about this player's action
-							auth.doAuthServerClientRequest('POST', '/api/1/events', {
-								user: player.remote_user,
-								experimonth: experimonth._id,
-								client_id: process.env.CLIENT_ID,
-								name: 'freeloader:action',
-								value: player.todaysAction
-							}, function(err, body){
-								if(player.todaysAction == 'freeload'){
-									// Player gets their uninvested principal in addition to the dividend.
-									player.balance += config('pointsToInvest', experimonth._id);
-									player.notifyOfFreeload(dividend + config('pointsToInvest', experimonth._id), function(){
-										// Tell the auth server about this player's earned points
-										auth.doAuthServerClientRequest('POST', '/api/1/events', {
-											user: player.remote_user,
-											experimonth: experimonth._id,
-											client_id: process.env.CLIENT_ID,
-											name: 'freeloader:pointsEarned',
-											value: dividend + config('pointsToInvest', experimonth._id)
-										}, function(err, body){
-											auth.doAuthServerClientRequest('POST', '/api/1/events', {
-												user: player.remote_user,
-												experimonth: experimonth._id,
-												client_id: process.env.CLIENT_ID,
-												name: 'freeloader:balance',
-												value: player.balance
-											}, function(err, body){
-												player.save(callback);
-											});
-										});
-									});
-								}else{
-									player.notifyOfInvestment(dividend, function(){
-										// Tell the auth server about this player's earned points
-										auth.doAuthServerClientRequest('POST', '/api/1/events', {
-											user: player.remote_user,
-											experimonth: experimonth._id,
-											client_id: process.env.CLIENT_ID,
-											name: 'freeloader:pointsEarned',
-											value: dividend
-										}, function(err, body){
-											auth.doAuthServerClientRequest('POST', '/api/1/events', {
-												user: player.remote_user,
-												experimonth: experimonth._id,
-												client_id: process.env.CLIENT_ID,
-												name: 'freeloader:balance',
-												value: player.balance
-											}, function(err, body){
-												player.save(callback);
-											});
-										});
-									});
-								}
-								return;
-							});
-						}, function(err){
-							if(err && V) console.log("There was an error saving a player :(", err);
-
-							// 11		If this group has < 3 members, dissolve it
-							// 12			(call the leftover members 'abandonees')
-							// 13			For each walkaway that caused this group to be dissolved, remember the set of abandonees
-							if(groupMap[groupID].players.length < 3 && _.size(groupMap) > 1){
-								async.each(groupMap[groupID].players, function(player, playerCallback){
-									abandonees.push(player);
-									
-									// Tell the auth server about this group dissolving
+									// Tell the auth server that this user walked away
 									auth.doAuthServerClientRequest('POST', '/api/1/events', {
 										user: player.remote_user,
 										experimonth: experimonth._id,
 										client_id: process.env.CLIENT_ID,
-										name: 'freeloader:groupDissolvingDueToSize',
+										name: 'freeloader:action',
+										value: 'walkaway'
+									}, function(err, body){
+										// TODO: Do something with the result? Or maybe not?
+										callback(false);
+									});
+									return;
+								}
+								return callback(true);
+							}
+							if(!player.todaysAction) {
+								player.getDefaultAction(function(defaultAction){
+									if(V) console.log('got default action for player:', player.remote_user, defaultAction);
+									player.todaysAction = defaultAction;
+									afterCheckingAction();
+								});
+							}else{
+								afterCheckingAction();
+							}
+						}, function(players){
+							groupMap[groupID].players = players;
+						
+							//  8		If every player chose to freeload, dissolve this group, reset each player's point value to zero (OR delete them?), and un-enroll them at the auth server (Trello Card #15)
+							var allFreeloaders = _.every(groupMap[groupID].players, function(player){
+								// Only pass this check if moocherPenaltyEnabled is on
+								return config('moocherPenaltyEnabled', experimonth._id) && player.todaysAction == 'freeload';
+							});
+							if(allFreeloaders){
+								if(V) console.log('This group had all freeloaders, so we\'re dissolving the group and adding these users to moochers');
+								
+								async.each(groupMap[groupID].players, function(player, playerCallback){
+									// Tell the auth server that this group was full of moochers and we're dissolving the group
+									auth.doAuthServerClientRequest('POST', '/api/1/events', {
+										user: player.remote_user,
+										experimonth: experimonth._id,
+										client_id: process.env.CLIENT_ID,
+										name: 'freeloader:allPlayersMoochedSoDissolvingGroup',
 										value: groupID
 									}, function(err, body){
-										playerCallback();
+										playerCallback(err);
 									});
 								}, function(err){
-									// All the people in this group are now walkaways
-									groupWalkaways[groupID] = groupMap[groupID].players;
+									//  9			Also, store these now un-enrolled player  (add them to 'moochers')
+									moochers = moochers.concat(groupMap[groupID].players);
 
 									// TODO: Dissolve the group
 									// Perhaps:
@@ -315,8 +222,113 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 								});
 								return;
 							}
-							return groupCallback();
-						}); // async.each(players)
+
+							// 10		Process the actions of the remaining players, handling investments and freeloading
+							if(V) console.log('Handling the actions of players in this group.');
+							var numInGroup = groupMap[groupID].players.length;
+							var numInvesting = _.reduce(groupMap[groupID].players, function(memo, player){
+								return memo + (player.todaysAction == 'invest' ? 1 : 0);
+							}, 0);
+							var amountInvested = numInvesting * config('pointsToInvest', experimonth._id);
+							var dividend = (amountInvested * 2) / numInGroup;
+							if(V) console.log('Total investment was ', numInvesting, 'players and therefore ', amountInvested, 'total. Dividends are therefore ', dividend, 'each, given', numInGroup, 'players.');
+							
+							async.each(groupMap[groupID].players, function(player, callback){
+								player.balance += dividend;
+
+								// Tell the auth server about this player's action
+								auth.doAuthServerClientRequest('POST', '/api/1/events', {
+									user: player.remote_user,
+									experimonth: experimonth._id,
+									client_id: process.env.CLIENT_ID,
+									name: 'freeloader:action',
+									value: player.todaysAction
+								}, function(err, body){
+									if(player.todaysAction == 'freeload'){
+										// Player gets their uninvested principal in addition to the dividend.
+										player.balance += config('pointsToInvest', experimonth._id);
+										player.notifyOfFreeload(dividend + config('pointsToInvest', experimonth._id), function(){
+											// Tell the auth server about this player's earned points
+											auth.doAuthServerClientRequest('POST', '/api/1/events', {
+												user: player.remote_user,
+												experimonth: experimonth._id,
+												client_id: process.env.CLIENT_ID,
+												name: 'freeloader:pointsEarned',
+												value: dividend + config('pointsToInvest', experimonth._id)
+											}, function(err, body){
+												auth.doAuthServerClientRequest('POST', '/api/1/events', {
+													user: player.remote_user,
+													experimonth: experimonth._id,
+													client_id: process.env.CLIENT_ID,
+													name: 'freeloader:balance',
+													value: player.balance
+												}, function(err, body){
+													player.todaysAction = null;
+													player.save(callback);
+												});
+											});
+										});
+									}else{
+										player.notifyOfInvestment(dividend, function(){
+											// Tell the auth server about this player's earned points
+											auth.doAuthServerClientRequest('POST', '/api/1/events', {
+												user: player.remote_user,
+												experimonth: experimonth._id,
+												client_id: process.env.CLIENT_ID,
+												name: 'freeloader:pointsEarned',
+												value: dividend
+											}, function(err, body){
+												auth.doAuthServerClientRequest('POST', '/api/1/events', {
+													user: player.remote_user,
+													experimonth: experimonth._id,
+													client_id: process.env.CLIENT_ID,
+													name: 'freeloader:balance',
+													value: player.balance
+												}, function(err, body){
+													player.todaysAction = null;
+													player.save(callback);
+												});
+											});
+										});
+									}
+									return;
+								});
+							}, function(err){
+								if(err && V) console.log("There was an error saving a player :(", err);
+
+								// 11		If this group has < 3 members, dissolve it
+								// 12			(call the leftover members 'abandonees')
+								// 13			For each walkaway that caused this group to be dissolved, remember the set of abandonees
+								if(groupMap[groupID].players.length < 3 && _.size(groupMap) > 1){
+									async.each(groupMap[groupID].players, function(player, playerCallback){
+										abandonees.push(player);
+										
+										// Tell the auth server about this group dissolving
+										auth.doAuthServerClientRequest('POST', '/api/1/events', {
+											user: player.remote_user,
+											experimonth: experimonth._id,
+											client_id: process.env.CLIENT_ID,
+											name: 'freeloader:groupDissolvingDueToSize',
+											value: groupID
+										}, function(err, body){
+											playerCallback();
+										});
+									}, function(err){
+										// All the people in this group are now walkaways
+										groupWalkaways[groupID] = groupMap[groupID].players;
+
+										// TODO: Dissolve the group
+										// Perhaps:
+										groupsToDissolve.push(group);
+										delete groupMap[groupID];
+
+										return groupCallback();
+									});
+									return;
+								}
+								return groupCallback();
+							}); // async.each(players)
+						}); // async.filter(players)
 					}, function(err){ // async.each(groups)
 						if(err && V) console.log("There was an error iterating over a group", err);
 						
@@ -341,6 +353,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 							matchingPlayer.remote_user = user._id;
 							matchingPlayer.experimonth = experimonth._id;
 							matchingPlayer.balance = config('startingPoints', experimonth._id);
+							matchingPlayer.todaysAction = null;
 							matchingPlayer.save(function(err, newPlayer){
 								if(err) console.log('Error saving new player: ', err);
 								if(V) console.log('New Player saved!');
@@ -384,6 +397,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 
 											abandonee.notifyOfNewGroupDueToAbandonment();
 
+											abandonee.todaysAction = null;
 											abandonee.save(function(err){
 												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
 												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
@@ -400,6 +414,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 											// Place this abandonee in the same group, leaving the other group for the walkaway player
 											abandonee.group = placementMatchupMap[abandonee.group];
 											placementMap[abandonee._id.toString()] = abandonee.group;
+											abandonee.todaysAction = null;
 											abandonee.save(function(err){
 												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
 												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
@@ -409,6 +424,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 											placementMatchupMap[abandonee.group] = smallestGroupDetails.group;
 											abandonee.group = smallestGroupDetails.group;
 											placementMap[abandonee._id.toString()] = abandonee.group;
+											abandonee.todaysAction = null;
 											abandonee.save(function(err){
 												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
 												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
@@ -487,7 +503,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													name: 'freeloader:addedToGroup',
 													value: player.group.toString()
 												}, function(err, body){
-													
+													player.todaysAction = null;
 													player.save(function(){
 														if(wasWalkaway){
 															player.notifyOfNewGroupDueToWalkaway(callback);
@@ -534,6 +550,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 												value: walkaway.group.toString()
 											}, function(err, body){
 												walkaway.notifyOfNewGroupDueToWalkaway(function(){
+													walkaway.todaysAction = null;
 													walkaway.save(function(err){
 														if(err) console.log('Error putting walkaway into existing group :(', smallestGroupDetails.group);
 														else if(V) console.log('Walkaway put into existing group!', smallestGroupDetails.group);
@@ -565,6 +582,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													value: newbie.group.toString()
 												}, function(err, body){
 													newbie.notifyOfNewGroupDueToNewbie(function(){
+														newbie.todaysAction = null;
 														newbie.save(function(err){
 															if(err) console.log('Error putting newbie into existing group :(', smallestGroupDetails.group);
 															else if(V) console.log('Newbie put into existing group!', smallestGroupDetails.group);

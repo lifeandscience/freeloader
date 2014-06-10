@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var util = require('util');
 var auth = require('../../auth');
+var config = require('../../config');
 var Schema = mongoose.Schema;
 
 var PlayerSchema = new Schema({
@@ -21,18 +22,18 @@ PlayerSchema.method('notify', function(type, format, subject, text, callback){
 	if(!type){
 		type = 'warning';
 	}
-	if(!format || format.length == 0){
+	if(!format || format.length === 0){
 		format = ['web'];
 	}
 	if(!text){
 		return callback(new Error('Can\'t notify without a message!'));
 	}
 	auth.doAuthServerClientRequest('POST', '/api/1/notifications', {
-		type: type
-	  , format: format
-	  , subject: subject
-	  , text: text
-	  , user: this.remote_user
+		type: type,
+		format: format,
+		subject: subject,
+		text: text,
+		user: this.remote_user
 	}, function(err, body){
 		callback(err, body);
 	});
@@ -91,6 +92,24 @@ PlayerSchema.methods.notifyOfEarnedAmount = function(earnedAmount, newBalance, c
 	var title = "Today's Earned Amount";
 	var text = " You have earned $" + earnedAmount.toFixed(2) + " today. Your new balance is: $" + newBalance.toFixed(2);	
 	this.notify("info", ['web', 'email'], title, text, callback);
+};
+
+PlayerSchema.methods.getDefaultAction = function(callback){
+	var conditionID = config('defaultChoiceProfileQuestion', this.experimonth, null);
+	if(!conditionID){
+		// console.log('no conditionID found, so using the config default!');
+		return callback(config('defaultAction', this.experimonth));
+	}
+	// console.log('asking auth server for default based on ', conditionID, this.remote_user);
+	return auth.doAuthServerClientRequest('GET', '/api/1/profile/answerForUserAndQuestion/'+this.remote_user+'/'+conditionID, null, function(err, data){
+		// console.log('result: ', err, answer);
+		var value = data && data.value ? data.value : null;
+		if(!value || ['freeload', 'invest'].indexOf(value.toLowerCase()) === -1){
+			// The value wasn't found or isn't a valid choice
+			value = config('defaultAction', this.experimonth);
+		}
+		callback(value);
+	});
 };
 
 var Player = mongoose.model('Player', PlayerSchema);

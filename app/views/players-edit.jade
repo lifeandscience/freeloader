@@ -13,20 +13,20 @@ block body
 				.control-group
 					label.control-label(for="todaysAction") Today's Action: 
 					.controls
-						- player.todaysAction = player.todaysAction || player.defaultAction
+						// - player.todaysAction = player.todaysAction || player.getDefaultAction()
 						select#todaysAction(name="todaysAction")
 							option(value="")
 							option(value="invest", selected=(player.todaysAction == "invest")) Invest
 							option(value="freeload", selected=(player.todaysAction == "freeload")) Freeload	
 							option(value="leavegroup", selected=(player.todaysAction == "leavegroup")) Leave Group	
-				.control-group
-					label.control-label(for="defaultAction") Default Action: 
-					.controls
-						select#defaultAction(name="defaultAction")
-							option(value="")
-							option(value="invest", selected=(player.defaultAction == "invest")) Invest
-							option(value="freeload", selected=(player.defaultAction == "freeload")) Freeload
-							option(value="last-action", selected=(player.defaultAction == "last-action")) Repeat Last Action
+				//.control-group
+				//	label.control-label(for="defaultAction") Default Action: 
+				//	.controls
+				//		select#defaultAction(name="defaultAction")
+				//			option(value="")
+				//			option(value="invest", selected=(player.defaultAction == "invest")) Invest
+				//			option(value="freeload", selected=(player.defaultAction == "freeload")) Freeload
+				//			option(value="last-action", selected=(player.defaultAction == "last-action")) Repeat Last Action
 				.control-group
 					.controls
 						button.btn(type="submit") Update Player

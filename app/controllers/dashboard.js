@@ -45,8 +45,12 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 				args.currentPlayer = currentPlayer;
 				args.pointsToInvest = config('pointsToInvest', currentExperimonthId);
 				args.numPlayers = players.length;
+				currentPlayer.getDefaultAction(function(err, defaultAction){
+					if(err) console.log("Error fetching default action for user: ", err);
 
-				res.render('dashboard', args);
+					args.defaultAction = defaultAction;
+					res.render('dashboard', args);
+				});
 			}
 		});
 	}
@@ -86,7 +90,7 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 			else {
 				currentPlayer = players[0];
 				currentPlayer.todaysAction = req.body.action || null;
-				currentPlayer.defaultAction = req.body.makeDefault ? req.body.action : null;
+				// currentPlayer.defaultAction = req.body.makeDefault ? req.body.action : null;
 
 				// Tell the auth server about this user changing their vote
 				auth.doAuthServerClientRequest('POST', '/api/1/events', {
