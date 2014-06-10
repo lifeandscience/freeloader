@@ -87,22 +87,32 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 				currentPlayer = players[0];
 				currentPlayer.todaysAction = req.body.action || null;
 				currentPlayer.defaultAction = req.body.makeDefault ? req.body.action : null;
+
+				// Tell the auth server about this user changing their vote
+				auth.doAuthServerClientRequest('POST', '/api/1/events', {
+					user: currentPlayer.remote_user,
+					experimonth: currentExperimonthId,
+					client_id: process.env.CLIENT_ID,
+					name: 'freeloader:setAction',
+					value: currentPlayer.todaysAction
+				}, function(err, body){
 				
-				// if(req.body.action == 'invest' && currentPlayer.balance < config.pointsToInvest){
-				// 	req.flash('error', 'You don\'t have enough points to invest. <p>You must have at least ' + config.pointsToInvest + ' points to invest. You have ' + currentPlayer.balance + ' points.</p>');
-				// 	res.redirect('/');
-				// }
-				// else {
-					currentPlayer.save(function(err){
-						if(err){
-							console.log("Error: Unable to save action for remove_user: " + userId + " (Error: " + err + ")");
-							req.flash('error', 'An error occurred while trying to save your action. Please try again.');
-						} else {
-							req.flash('success', 'Your choice was saved successfully!');
-						}
-						res.redirect('/');
-					});	
-				// }
+					// if(req.body.action == 'invest' && currentPlayer.balance < config.pointsToInvest){
+					// 	req.flash('error', 'You don\'t have enough points to invest. <p>You must have at least ' + config.pointsToInvest + ' points to invest. You have ' + currentPlayer.balance + ' points.</p>');
+					// 	res.redirect('/');
+					// }
+					// else {
+						currentPlayer.save(function(err){
+							if(err){
+								console.log("Error: Unable to save action for remove_user: " + userId + " (Error: " + err + ")");
+								req.flash('error', 'An error occurred while trying to save your action. Please try again.');
+							} else {
+								req.flash('success', 'Your choice was saved successfully!');
+							}
+							res.redirect('/');
+						});	
+					// }
+				});
 			}
 		});
 	}
