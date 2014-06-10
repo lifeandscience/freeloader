@@ -234,46 +234,48 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 								name: 'freeloader:action',
 								value: player.todaysAction
 							}, function(err, body){
-
 								if(player.todaysAction == 'freeload'){
 									// Player gets their uninvested principal in addition to the dividend.
 									player.balance += config.pointsToInvest;
-
-									// Tell the auth server about this player's earned points
-									auth.doAuthServerClientRequest('POST', '/api/1/events', {
-										user: player.remote_user,
-										experimonth: experimonth._id,
-										client_id: process.env.CLIENT_ID,
-										name: 'freeloader:pointsEarned',
-										value: dividend + config.pointsToInvest
-									}, function(err, body){
+									player.notifyOfFreeload(dividend + config.pointsToInvest, function(){
+										// Tell the auth server about this player's earned points
 										auth.doAuthServerClientRequest('POST', '/api/1/events', {
 											user: player.remote_user,
 											experimonth: experimonth._id,
 											client_id: process.env.CLIENT_ID,
-											name: 'freeloader:balance',
-											value: player.balance
+											name: 'freeloader:pointsEarned',
+											value: dividend + config.pointsToInvest
 										}, function(err, body){
-											player.save(callback);
+											auth.doAuthServerClientRequest('POST', '/api/1/events', {
+												user: player.remote_user,
+												experimonth: experimonth._id,
+												client_id: process.env.CLIENT_ID,
+												name: 'freeloader:balance',
+												value: player.balance
+											}, function(err, body){
+												player.save(callback);
+											});
 										});
 									});
 								}else{
-									// Tell the auth server about this player's earned points
-									auth.doAuthServerClientRequest('POST', '/api/1/events', {
-										user: player.remote_user,
-										experimonth: experimonth._id,
-										client_id: process.env.CLIENT_ID,
-										name: 'freeloader:pointsEarned',
-										value: dividend
-									}, function(err, body){
+									player.notifyOfInvestment(dividend, function(){
+										// Tell the auth server about this player's earned points
 										auth.doAuthServerClientRequest('POST', '/api/1/events', {
 											user: player.remote_user,
 											experimonth: experimonth._id,
 											client_id: process.env.CLIENT_ID,
-											name: 'freeloader:balance',
-											value: player.balance
+											name: 'freeloader:pointsEarned',
+											value: dividend
 										}, function(err, body){
-											player.save(callback);
+											auth.doAuthServerClientRequest('POST', '/api/1/events', {
+												user: player.remote_user,
+												experimonth: experimonth._id,
+												client_id: process.env.CLIENT_ID,
+												name: 'freeloader:balance',
+												value: player.balance
+											}, function(err, body){
+												player.save(callback);
+											});
 										});
 									});
 								}
@@ -378,7 +380,9 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 											}, function(err, body){
 												// TODO: Do something with the result? Or maybe not?
 											});
-											
+
+											abandonee.notifyOfNewGroupDueToAbandonment();
+
 											abandonee.save(function(err){
 												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
 												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
@@ -419,6 +423,9 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 										}, function(err, body){
 											// TODO: Do something with the result? Or maybe not?
 										});
+
+										abandonee.notifyOfNewGroupDueToAbandonment();
+
 									}); // _.each(abandonees)
 								}
 							} // abandonees.length > 0
@@ -458,8 +465,10 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 										}, function(callback){
 											var player = null;
 											if(V) console.log('looking for a player in the walkaways or newbies: ', walkaways.length, 'walkaways,', newbies.length, 'newbies');
+											var wasWalkaway = false;
 											if(walkaways.length > 0){
 												player = walkaways.shift();
+												wasWalkaway = true;
 											}else if(newbies.length > 0){
 												player = newbies.shift();
 											}
@@ -477,7 +486,14 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													name: 'freeloader:addedToGroup',
 													value: player.group.toString()
 												}, function(err, body){
-													player.save(callback);
+													
+													player.save(function(){
+														if(wasWalkaway){
+															player.notifyOfNewGroupDueToWalkaway(callback);
+														}else{
+															player.notifyOfNewGroupDueToNewbie(callback);
+														}
+													});
 												});
 											}else{
 												if(V) console.log('Didn\'t find a player to add to the group!');
@@ -516,10 +532,12 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 												name: 'freeloader:addedToGroup',
 												value: walkaway.group.toString()
 											}, function(err, body){
-												walkaway.save(function(err){
-													if(err) console.log('Error putting walkaway into existing group :(', smallestGroupDetails.group);
-													else if(V) console.log('Walkaway put into existing group!', smallestGroupDetails.group);
-													walkawayCallback(err);
+												walkaway.notifyOfNewGroupDueToWalkaway(function(){
+													walkaway.save(function(err){
+														if(err) console.log('Error putting walkaway into existing group :(', smallestGroupDetails.group);
+														else if(V) console.log('Walkaway put into existing group!', smallestGroupDetails.group);
+														walkawayCallback(err);
+													});
 												});
 											});
 										}else{
@@ -545,10 +563,12 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													name: 'freeloader:addedToGroup',
 													value: newbie.group.toString()
 												}, function(err, body){
-													newbie.save(function(err){
-														if(err) console.log('Error putting newbie into existing group :(', smallestGroupDetails.group);
-														else if(V) console.log('Newbie put into existing group!', smallestGroupDetails.group);
-														newbieCallback(err);
+													newbie.notifyOfNewGroupDueToNewbie(function(){
+														newbie.save(function(err){
+															if(err) console.log('Error putting newbie into existing group :(', smallestGroupDetails.group);
+															else if(V) console.log('Newbie put into existing group!', smallestGroupDetails.group);
+															newbieCallback(err);
+														});
 													});
 												});
 											}else{
@@ -568,7 +588,9 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													name: 'freeloader:balanceReset',
 													value: 'deserter'
 												}, function(err, body){
-													deserter.remove(deserterCallback);
+													deserter.notifyOfDesertion(function(){
+														deserter.remove(deserterCallback);
+													});
 												});
 											}, function(err){
 												if(V) console.log('Deleting and un-enrolling the moochers.');
@@ -592,7 +614,9 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 															name: 'freeloader:balanceReset',
 															value: 'moocher'
 														}, function(err, body){
-															moocher.remove(moocherCallback);
+															moocher.notifyOfMooching(function(){
+																moocher.remove(moocherCallback);
+															});
 														});
 													});
 												}, function(err){

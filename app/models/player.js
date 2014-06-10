@@ -38,6 +38,55 @@ PlayerSchema.method('notify', function(type, format, subject, text, callback){
 	});
 });
 
+
+PlayerSchema.methods.notifyOfFreeload = function(amountEarned, callback) {
+	var url = process.env.BASEURL + '/play';
+	var title = 'Today You Freeloaded';
+	var text = ' You chose to freeload today. You earned $' + amountEarned.toFixed(2) + ' and your new balance is $' + this.balance.toFixed(2)+'. Make a decision for today at\n\n'+url;
+	this.notify("info", ['web', 'email'], title, text, callback);
+};
+PlayerSchema.methods.notifyOfInvestment = function(amountEarned, callback) {
+	var url = process.env.BASEURL + '/play';
+	var title = 'Today You Invested';
+	var text = ' You chose to invest today. You earned $' + amountEarned.toFixed(2) + ' and your new balance is $' + this.balance.toFixed(2)+'. Make a decision for today at\n\n'+url;
+	this.notify("info", ['web', 'email'], title, text, callback);
+};
+PlayerSchema.methods.notifyOfNewGroupDueToAbandonment = function(callback) {
+	var url = process.env.BASEURL + '/play';
+	var title = 'You were assigned to a new group because your old group was disbanded.';
+	var text = ' The group you were in grew too small, so your group was disbanded. You are now in a group identified as ' + this.group + '. Make a decision for today at\n\n'+url;
+	this.notify("info", ['web', 'email'], title, text, callback);
+};
+PlayerSchema.methods.notifyOfNewGroupDueToWalkaway = function(callback) {
+	var url = process.env.BASEURL + '/play';
+	var title = 'You were assigned to a new group because you walked away from your old group.';
+	var text = ' You walked away. So, you were placed in a new group identified as ' + this.group + '. Make a decision for today at\n\n'+url;
+	this.notify("info", ['web', 'email'], title, text, callback);
+};
+PlayerSchema.methods.notifyOfNewGroupDueToNewbie = function(callback) {
+	var url = process.env.BASEURL + '/play';
+	var title = 'You have been assigned to a group. Play now!';
+	var text = ' You were placed in a new group identified as ' + this.group + '. Make a decision for today at\n\n'+url;
+	this.notify("info", ['web', 'email'], title, text, callback);
+};
+PlayerSchema.methods.notifyOfDesertion = function(callback) {
+	var title = 'You have left your spot in Freeloader';
+	var text = ' You were unenrolled from Freeloader. Your balance has been reset and you\'ll no longer be prompted to play unless you re-enroll.';
+	this.notify("info", ['web', 'email'], title, text, callback);
+};
+PlayerSchema.methods.notifyOfMooching = function(callback) {
+	var title = 'You and all the members of your group chose to Freeload.';
+	var text = ' Because you and all of your peers chose to Freeload, your group has been disbanded, you\'ve been un-enrolled from this Experimonth, and your balance has been reset to zero. You\'ll no longer be prompted to play unless you re-enroll.';
+	this.notify("info", ['web', 'email'], title, text, callback);
+};
+// notifyOfFreeload(amountEarned, callback)
+// notifyOfInvestment(amountEarned, callback)
+// notifyOfNewGroupDueToAbandonment(callback)
+// notifyOfNewGroupDueToWalkaway(callback)
+// notifyOfNewGroupDueToNewbie(callback)
+// notifyOfDesertion(callback)
+// notifyOfMooching(callback)
+
 PlayerSchema.methods.notifyOfEarnedAmount = function(earnedAmount, newBalance, callback) {
 	var title = "Today's Earned Amount";
 	var text = " You have earned $" + earnedAmount.toFixed(2) + " today. Your new balance is: $" + newBalance.toFixed(2);	
