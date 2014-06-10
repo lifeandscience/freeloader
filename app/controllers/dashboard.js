@@ -22,7 +22,7 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 	var args = {
 		title: appTitle, 
 		remote_user: userId,
-		isDebug: config.isDebug,
+		isDebug: config('isDebug', currentExperimonthId),
 		moment: moment
 	};
 	
@@ -43,7 +43,7 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 				currentPlayer = players[0];
 				args.currentExperimonthId = currentExperimonthId;
 				args.currentPlayer = currentPlayer;
-				args.pointsToInvest = config.pointsToInvest;
+				args.pointsToInvest = config('pointsToInvest', currentExperimonthId);
 				args.numPlayers = players.length;
 
 				res.render('dashboard', args);

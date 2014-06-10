@@ -71,7 +71,7 @@ app.get('/players/simulate/create/:num_players', auth.authorize(2, 10), function
 				for(x=0; x < req.params.num_players; x++) {
 					var initial_balance = Math.floor((Math.random()*10));	//Pick a random number of points between 0-10 to append to default starting points
 					var player = new Player();
-					player.balance = config.startingPoints + initial_balance;
+					player.balance = config('startingPoints', experimonth._id) + initial_balance;
 					player.todaysAction = actions[initial_balance % actions.length];
 					player.experimonth = experimonth._id;
 					player.save(function(err, player){

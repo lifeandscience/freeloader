@@ -159,7 +159,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 						//  7		Find players who chose to walkaway and remove them from their groups, but store them and the ID of their former group for later usage (call them 'walkaways')
 						groupMap[groupID].players = _.filter(groupMap[groupID].players, function(player){
 							if(!player.todaysAction) {
-								player.todaysAction = config.defaultAction ? config.defaultAction : (player.defaultAction ? player.defaultAction : null);
+								player.todaysAction = config('defaultAction', experimonth._id, player.defaultAction || null);
 							}
 							if(player.todaysAction == 'walkaway' && deserters.indexOf(player) === -1){
 								if(V) console.log('Found a walkaway!', player.remote_user);
@@ -183,7 +183,8 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 						
 						//  8		If every player chose to freeload, dissolve this group, reset each player's point value to zero (OR delete them?), and un-enroll them at the auth server (Trello Card #15)
 						var allFreeloaders = _.every(groupMap[groupID].players, function(player){
-							return player.todaysAction == 'freeload';
+							// Only pass this check if moocherPenaltyEnabled is on
+							return config('moocherPenaltyEnabled', experimonth._id) && player.todaysAction == 'freeload';
 						});
 						if(allFreeloaders){
 							if(V) console.log('This group had all freeloaders, so we\'re dissolving the group and adding these users to moochers');
@@ -219,7 +220,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 						var numInvesting = _.reduce(groupMap[groupID].players, function(memo, player){
 							return memo + (player.todaysAction == 'invest' ? 1 : 0);
 						}, 0);
-						var amountInvested = numInvesting * config.pointsToInvest;
+						var amountInvested = numInvesting * config('pointsToInvest', experimonth._id);
 						var dividend = (amountInvested * 2) / numInGroup;
 						if(V) console.log('Total investment was ', numInvesting, 'players and therefore ', amountInvested, 'total. Dividends are therefore ', dividend, 'each, given', numInGroup, 'players.');
 						
@@ -236,15 +237,15 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 							}, function(err, body){
 								if(player.todaysAction == 'freeload'){
 									// Player gets their uninvested principal in addition to the dividend.
-									player.balance += config.pointsToInvest;
-									player.notifyOfFreeload(dividend + config.pointsToInvest, function(){
+									player.balance += config('pointsToInvest', experimonth._id);
+									player.notifyOfFreeload(dividend + config('pointsToInvest', experimonth._id), function(){
 										// Tell the auth server about this player's earned points
 										auth.doAuthServerClientRequest('POST', '/api/1/events', {
 											user: player.remote_user,
 											experimonth: experimonth._id,
 											client_id: process.env.CLIENT_ID,
 											name: 'freeloader:pointsEarned',
-											value: dividend + config.pointsToInvest
+											value: dividend + config('pointsToInvest', experimonth._id)
 										}, function(err, body){
 											auth.doAuthServerClientRequest('POST', '/api/1/events', {
 												user: player.remote_user,
@@ -339,7 +340,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 							matchingPlayer = new Player();
 							matchingPlayer.remote_user = user._id;
 							matchingPlayer.experimonth = experimonth._id;
-							matchingPlayer.balance = config.startingPoints;
+							matchingPlayer.balance = config('startingPoints', experimonth._id);
 							matchingPlayer.save(function(err, newPlayer){
 								if(err) console.log('Error saving new player: ', err);
 								if(V) console.log('New Player saved!');
@@ -353,15 +354,15 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 							
 							// 17	Now we have 'walkaways' (who should be added to groups, but not the group they were just in), 'newbies' who should be added to any group, and 'abandonees'
 							var optimalNumberOfGroups = Math.round(experimonth.users.length / 10);
-							if(optimalNumberOfGroups < config.minimumNumberOfGroups){
-								optimalNumberOfGroups = config.minimumNumberOfGroups;
+							if(optimalNumberOfGroups < config('minimumNumberOfGroups', experimonth._id)){
+								optimalNumberOfGroups = config('minimumNumberOfGroups', experimonth._id);
 							}
 							
 							var placementMap = {};
 							if(V) console.log('Dealing with ', abandonees.length, 'abandonees.');
 							if(abandonees.length > 0){
 								if(V) console.log('For reference, there are ', _.size(groupMap), 'groups and ', optimalNumberOfGroups, 'groups desired and ', walkaways.length, 'walkaways and ', newbies.length, 'newbies.');
-								if(_.size(groupMap) > 2 || (optimalNumberOfGroups > 2 && (walkaways.length + newbies.length > config.minimumGroupSize))){
+								if(_.size(groupMap) > 2 || (optimalNumberOfGroups > 2 && (walkaways.length + newbies.length > config('minimumGroupSize', experimonth._id)))){
 									// 18		If (there are more than 2 groups or the optimal number of groups is > 2 and there are enough walkaways + newbies to create a new group):
 									// 19			Evenly allocate all abandonees across existing groups 
 									_.each(abandonees, function(abandonee){
@@ -441,8 +442,8 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 								// Should we make new groups?
 								async.whilst(function(){
 									if(V) console.log('Checking if we should create new groups:');
-									if(V) console.log('Walkaways: ', walkaways.length, 'Newbies:', newbies.length, 'Minimum Group Size:', config.minimumGroupSize, 'Number of Groups:', _.size(groupMap), 'Optimal number of groups:', optimalNumberOfGroups);
-									return (walkaways.length > 0 || newbies.length > 0) && (_.size(groupMap) < 2 || ((walkaways.length + newbies.length > config.minimumGroupSize) && (_.size(groupMap) < optimalNumberOfGroups)));
+									if(V) console.log('Walkaways: ', walkaways.length, 'Newbies:', newbies.length, 'Minimum Group Size:', config('minimumGroupSize', experimonth._id), 'Number of Groups:', _.size(groupMap), 'Optimal number of groups:', optimalNumberOfGroups);
+									return (walkaways.length > 0 || newbies.length > 0) && (_.size(groupMap) < 2 || ((walkaways.length + newbies.length > config('minimumGroupSize', experimonth._id)) && (_.size(groupMap) < optimalNumberOfGroups)));
 								}, function(whilstCallback){
 									// 24			Create a new group with three walkaways (preferably) and/or newbies
 									
@@ -461,7 +462,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 
 										var i = 0;
 										async.whilst(function(){
-											return i < config.minimumGroupSize && (walkaways.length > 0 || newbies.length > 0);
+											return i < config('minimumGroupSize', experimonth._id) && (walkaways.length > 0 || newbies.length > 0);
 										}, function(callback){
 											var player = null;
 											if(V) console.log('looking for a player in the walkaways or newbies: ', walkaways.length, 'walkaways,', newbies.length, 'newbies');
