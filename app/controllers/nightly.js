@@ -7,9 +7,3 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 		res.redirect('/groups');
 	});
 });
-
-
-
-
-
-
