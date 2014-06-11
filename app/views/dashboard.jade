@@ -29,7 +29,7 @@ block body
 			.status
 				.time-left
 					span.status-label Time Left:
-					span.time 300
+					span.time(data-date=(locals.group ? group.deadline+'' : ''))
 					span.units  seconds
 				.bank
 					span.status-label Bank: 

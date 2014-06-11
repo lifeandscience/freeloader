@@ -4,6 +4,7 @@ var _ = require('underscore');
 var moment = require('moment');
 var config = require('./config');  
 var Player = mongoose.model('Player');
+var Group = mongoose.model('Group');
 
 
 var appTitle = "Freeloader";
@@ -56,7 +57,11 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 
 					currentPlayer.getDefaultAction(function(defaultAction){
 						args.defaultAction = defaultAction;
-						res.render('dashboard', args);
+						
+						Group.findById(currentPlayer.group).exec(function(err, group){
+							args.group = group;
+							res.render('dashboard', args);
+						});
 					});
 				});
 			}

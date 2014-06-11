@@ -5,6 +5,17 @@ var auth = require('./auth');
 var config = require('./config');
 var _ = require('underscore');
 var async = require('async');
+var moment = require('moment');
+
+var pickDeadline = function(){
+	var now = moment();
+	now.add(1, 'day');
+	now.hours(0);
+	now.minutes(0);
+	now.seconds(0);
+	now.milliseconds(0);
+	return now.toDate();
+}
 
 app.get('/nightly', auth.authorize(2, 10), function(req, res){
 	
@@ -648,6 +659,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 														async.each(groups, function(group, callback){
 															Player.count({group: group._id}).exec(function(err, playerCount){
 																group.num_players = playerCount;
+																group.deadline = pickDeadline();
 																group.save(callback);
 															});
 														}, function(err){
