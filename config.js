@@ -11,7 +11,7 @@ var defaults = {
 	moocherPenaltyEnabled: false
 };
 
-module.exports = function(property, experimonthID, defaultValue){
+module.exports = function(property, experimonthID, defaultValue, toBoolean){
 	if(experimonthID){
 		experimonthID = experimonthID.toString(); // Verify this is a string and not an ObjectID
 	}else{
@@ -49,6 +49,9 @@ module.exports = function(property, experimonthID, defaultValue){
 		// Found a value, so cache it
 		cache[experimonthID][property] = value;
 		// console.log('caching!');
+	}
+	if(toBoolean){
+		return value && value.toLowerCase() === 'true'
 	}
 	return value;
 }

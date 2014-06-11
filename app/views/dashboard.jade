@@ -33,18 +33,19 @@ block body
 			.decision-form
 				h3 What will you do today?
 				form(action="/play", method="post")
-					label.checkbox
-						input(type="checkbox", name="makeDefault")
-						small Make this decision my default
+					//label.checkbox
+					//	input(type="checkbox", name="makeDefault")
+					//	small Make this decision my default
 					button.btn.btn-default.popover-trigger(
 								type="submit", 
 								name="action", 
 								value="invest", 
 								class=(locals.currentPlayer && currentPlayer.todaysAction == 'invest' ? 'btn-primary' : ''), 
+								data-title="Invest",
 								data-content="You will invest #{pointsToInvest} points and receive a portion of the combined proceeds."
 						) 
 						| Invest 
-						b.icon.icon-info-sign
+						i.glyphicon.glyphicon-info-sign
 					
 					
 					button.btn.btn-default.popover-trigger(
@@ -52,18 +53,20 @@ block body
 								name="action", 
 								value="freeload", 
 								class=(locals.currentPlayer && currentPlayer.todaysAction == 'freeload' ? 'btn-primary' : ''), 
+								data-title="Freeload",
 								data-content="You will not invest any points, but will receive a portion of the proceeds."
 						)  
 						| Freeload  
-						b.icon.icon-info-sign
+						i.glyphicon.glyphicon-info-sign
 					
-					if(locals.numPlayers > 15)
-						button.btn-default.btn.popover-trigger(
+					if(walkawayEnabled && locals.numPlayers > 15)
+						button.btn.btn-default.popover-trigger(
 									type="submit", 
 									name="action", 
-									value="leavegroup", 
-									class=(locals.currentPlayer && currentPlayer.todaysAction == 'leavegroup' ? 'btn-primary' : ''), 
+									value="walkaway", 
+									class=(locals.currentPlayer && currentPlayer.todaysAction == 'walkaway' ? 'btn-primary' : ''), 
+									data-title="Leave Group",
 									data-content="You will leave this group and be re-assigned a new group for tomorrow."
 							)  
-							| Leave Group 
-							b.icon.icon-info-sign
+							| Leave Group  
+							i.glyphicon.glyphicon-info-sign

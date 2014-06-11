@@ -22,6 +22,10 @@ body > .container > #container-inner {
   /* temporary */
   padding-top: 600px;
 }
+.popover > .popover-title,
+.popover > .popover-content {
+  color: #000;
+}
 h1.gameTitle {
   position: absolute;
   top: 0px;

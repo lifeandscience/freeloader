@@ -45,6 +45,7 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 				args.currentPlayer = currentPlayer;
 				args.pointsToInvest = config('pointsToInvest', currentExperimonthId);
 				args.numPlayers = players.length;
+				args.walkawayEnabled = config('walkawayEnabled', currentExperimonthId, false, true);
 				currentPlayer.getDefaultAction(function(err, defaultAction){
 					if(err) console.log("Error fetching default action for user: ", err);
 
