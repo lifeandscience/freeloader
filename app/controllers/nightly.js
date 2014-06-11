@@ -247,6 +247,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 									if(player.todaysAction == 'freeload'){
 										// Player gets their uninvested principal in addition to the dividend.
 										player.balance += config('pointsToInvest', experimonth._id);
+										player.lastTake = config('pointsToInvest', experimonth._id) + dividend;
 										player.notifyOfFreeload(dividend + config('pointsToInvest', experimonth._id), function(){
 											// Tell the auth server about this player's earned points
 											auth.doAuthServerClientRequest('POST', '/api/1/events', {
@@ -263,12 +264,14 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													name: 'freeloader:balance',
 													value: player.balance
 												}, function(err, body){
+													player.lastAction = player.todaysAction;
 													player.todaysAction = null;
 													player.save(callback);
 												});
 											});
 										});
 									}else{
+										player.lastTake = dividend;
 										player.notifyOfInvestment(dividend, function(){
 											// Tell the auth server about this player's earned points
 											auth.doAuthServerClientRequest('POST', '/api/1/events', {
@@ -285,6 +288,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													name: 'freeloader:balance',
 													value: player.balance
 												}, function(err, body){
+													player.lastAction = player.todaysAction;
 													player.todaysAction = null;
 													player.save(callback);
 												});
@@ -353,6 +357,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 							matchingPlayer.remote_user = user._id;
 							matchingPlayer.experimonth = experimonth._id;
 							matchingPlayer.balance = config('startingPoints', experimonth._id);
+							matchingPlayer.lastAction = matchingPlayer.todaysAction;
 							matchingPlayer.todaysAction = null;
 							matchingPlayer.save(function(err, newPlayer){
 								if(err) console.log('Error saving new player: ', err);
@@ -397,7 +402,6 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 
 											abandonee.notifyOfNewGroupDueToAbandonment();
 
-											abandonee.todaysAction = null;
 											abandonee.save(function(err){
 												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
 												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
@@ -414,7 +418,6 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 											// Place this abandonee in the same group, leaving the other group for the walkaway player
 											abandonee.group = placementMatchupMap[abandonee.group];
 											placementMap[abandonee._id.toString()] = abandonee.group;
-											abandonee.todaysAction = null;
 											abandonee.save(function(err){
 												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
 												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
@@ -424,7 +427,6 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 											placementMatchupMap[abandonee.group] = smallestGroupDetails.group;
 											abandonee.group = smallestGroupDetails.group;
 											placementMap[abandonee._id.toString()] = abandonee.group;
-											abandonee.todaysAction = null;
 											abandonee.save(function(err){
 												if(err) console.log('Error putting abandonee into existing group :(', groupDetails.group);
 												else if(V) console.log('Abandonee put into existing group!', groupDetails.group);
@@ -503,7 +505,6 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													name: 'freeloader:addedToGroup',
 													value: player.group.toString()
 												}, function(err, body){
-													player.todaysAction = null;
 													player.save(function(){
 														if(wasWalkaway){
 															player.notifyOfNewGroupDueToWalkaway(callback);
@@ -550,6 +551,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 												value: walkaway.group.toString()
 											}, function(err, body){
 												walkaway.notifyOfNewGroupDueToWalkaway(function(){
+													walkaway.lastAction = 'walkaway';
 													walkaway.todaysAction = null;
 													walkaway.save(function(err){
 														if(err) console.log('Error putting walkaway into existing group :(', smallestGroupDetails.group);
@@ -582,6 +584,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 													value: newbie.group.toString()
 												}, function(err, body){
 													newbie.notifyOfNewGroupDueToNewbie(function(){
+														newbie.lastAction = null;
 														newbie.todaysAction = null;
 														newbie.save(function(err){
 															if(err) console.log('Error putting newbie into existing group :(', smallestGroupDetails.group);

@@ -14,6 +14,7 @@ var PlayerSchema = new Schema({
 	lastModified: {type: Date, default: function(){ return Date.now(); }},
 	group: {type: Schema.ObjectId, ref: 'Group'},
 	defaultAction: String,
+	lastTake: {type: Number, default: 0},
 	lastAction: String,
 	todaysAction: String
 });
@@ -111,6 +112,34 @@ PlayerSchema.methods.getDefaultAction = function(callback){
 		callback(value);
 	});
 };
+
+PlayerSchema.methods.convertAction = function(action){
+	if(action){
+		if(action == 'walkaway'){
+			return 'leave';
+		}
+		if(action == 'freeload'){
+			return 'keep';
+		}
+		if(action == 'invest'){
+			return action;
+		}
+	}
+	return '';
+}
+
+PlayerSchema.methods.setAction = function(action){
+	if(action == 'freeload' || action == 'invest'){
+		this.todaysAction = action;
+	}else if(action == 'keep'){
+		this.todaysAction = 'freeload'
+	}else if(config('walkawayEnabled', this.remote_user, false, true) && action == 'leave'){
+		this.todaysAction = 'walkaway';
+	}else{
+		this.todaysAction = null;
+	}
+	return;
+}
 
 var Player = mongoose.model('Player', PlayerSchema);
 module.exports = Player;

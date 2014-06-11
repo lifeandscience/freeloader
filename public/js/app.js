@@ -1,7 +1,8 @@
 jQuery(function(){
-	jQuery('.popover-trigger').popover({
+	jQuery('.action-input').focus();
+	jQuery('.tooltip-trigger').tooltip({
 		placement: 'top',
-		trigger: 'hover'
+		container: 'body'
 	});
 });
 

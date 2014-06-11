@@ -46,11 +46,18 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 				args.pointsToInvest = config('pointsToInvest', currentExperimonthId);
 				args.numPlayers = players.length;
 				args.walkawayEnabled = config('walkawayEnabled', currentExperimonthId, false, true);
-				currentPlayer.getDefaultAction(function(err, defaultAction){
-					if(err) console.log("Error fetching default action for user: ", err);
 
-					args.defaultAction = defaultAction;
-					res.render('dashboard', args);
+				Player.find({group: currentPlayer.group}).exec(function(err, players){
+					var groups = _.groupBy(players, function(player){
+						return player.lastAction;
+					});
+					args.investors = groups.invest || [];
+					args.freeloaders = groups.freeload || [];
+
+					currentPlayer.getDefaultAction(function(defaultAction){
+						args.defaultAction = defaultAction;
+						res.render('dashboard', args);
+					});
 				});
 			}
 		});
@@ -90,7 +97,7 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 			}
 			else {
 				currentPlayer = players[0];
-				currentPlayer.todaysAction = req.body.action || null;
+				currentPlayer.setAction(req.body.action || null);
 				// currentPlayer.defaultAction = req.body.makeDefault ? req.body.action : null;
 
 				// Tell the auth server about this user changing their vote
@@ -111,7 +118,13 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 							if(err){
 								console.log("Error: Unable to save action for remove_user: " + userId + " (Error: " + err + ")");
 								req.flash('error', 'An error occurred while trying to save your action. Please try again.');
-							} else {
+							}else if(!currentPlayer.todaysAction){
+								if(config('walkawayEnabled', currentPlayer.remote_user, false, true)){
+									req.flash('info', 'That choice wasn\'t recognized. Please type "invest", "keep", or "leave".');
+								}else{
+									req.flash('info', 'That choice wasn\'t recognized. Please type "invest" or "keep".');
+								}
+							}else{
 								req.flash('success', 'Your choice was saved successfully!');
 							}
 							res.redirect('/');

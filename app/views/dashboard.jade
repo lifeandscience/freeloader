@@ -8,13 +8,9 @@ block body
 	#container-inner
 		h1.gameTitle Freeloader
 		.cursor
-		
-		h1 Welcome to Freeloader
+
 		- if (hasError)	
 			h2.error An error occurred. Please check the console log.
-
-		if locals.currentPlayer
-			h3 Your balance is $#{currentPlayer.balance}.
 
 		- if (memberships)
 			if (!locals.currentExperimonthId)
@@ -30,43 +26,134 @@ block body
 						input(type='submit',value='Save')
 
 		- if (locals.currentExperimonthId)
+			.status
+				.time-left
+					span.status-label Time Left:
+					span.time 300
+					span.units  seconds
+				.bank
+					span.status-label Bank: 
+					span.balance $#{locals.currentPlayer ? currentPlayer.balance.toFixed(2) : '0.00'}
+			- var lastTake = 0
+			.sign.investor-sign
+				h2 #{investors.length}
+				h3 Investor#{investors.length != 1 ? 's' : ''}
+				h4 Yesterday
+			.people.investors
+				each investor, i in investors
+					a.person.investor.tooltip-trigger(
+							data-player-id=investor._id,
+							data-player-balance=investor.balance.toFixed(2),
+							data-toggle="popover",
+							data-title="Balance: $"+investor.balance.toFixed(2),
+							class=(locals.currentPlayer && investor._id.toString() == currentPlayer._id.toString() ? 'you' : '')
+						)
+					- lastTake = investor.lastTake
+				//-
+					//- Test people
+					- for(var i=0; i<12; i++)
+						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+						a.person.investor.tooltip-trigger(
+								data-player-id="test"
+								data-player-balance=fauxBalance,
+								data-toggle="popover",
+								data-title="Balance: $"+fauxBalance
+							)
+			.take.investor-take Investors' Take: $#{lastTake.toFixed(2)}
+			.sign.freeloader-sign
+				h2 #{freeloaders.length}
+				h3 Freeloader#{freeloaders.length != 1 ? 's' : ''}
+				h4 Yesterday
+			.people.freeloaders
+				each freeloader, i in freeloaders
+					a.person.freeloader.tooltip-trigger(
+							data-player-id=freeloader._id,
+							data-player-balance=freeloader.balance.toFixed(2),
+							data-toggle="popover",
+							data-title="Balance: $"+freeloader.balance.toFixed(2),
+							class=(locals.currentPlayer && freeloader._id.toString() == currentPlayer._id.toString() ? 'you' : '')
+						)
+					- lastTake = freeloader.lastTake
+				//-
+					//- Test people
+					- for(var i=0; i<12; i++)
+						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+						a.person.freeloader.tooltip-trigger(
+								data-player-id="test"
+								data-player-balance=fauxBalance,
+								data-toggle="popover",
+								data-title="Balance: $"+fauxBalance
+							)
+			.take.freeloader-take Freeloaders' Take: $#{lastTake.toFixed(2)}
+
 			.decision-form
-				h3 What will you do today?
+				if walkawayEnabled
+					p YOU HAVE BEEN GIVEN ONE DOLLAR. YOU CAN INVEST IT, KEEP IT FOR YOURSELF, OR SPEND IT TO LEAVE THIS GROUP. WHAT DO YOU DECIDE?
+				else
+					p YOU HAVE BEEN GIVEN ONE DOLLAR. YOU CAN INVEST IT OR KEEP IT FOR YOURSELF. WHAT DO YOU DECIDE?
+				
+				if locals.currentPlayer && currentPlayer.todaysAction
+					p Your current choice is to #{currentPlayer.convertAction(currentPlayer.todaysAction)}.
+
 				form(action="/play", method="post")
+					.decision-label 
+						p TYPE YOUR ANSWER HERE: 
+					.decision-input
+						input.action-input(
+								type="text",
+								name="action"
+							)
+						.decision-help
+							if walkawayEnabled
+								p 
+									span.white TYPE INVEST, KEEP, 
+									span.gray OR 
+									span.white LEAVE
+							else
+								p 
+									span.white TYPE INVEST  
+									span.gray OR 
+									span.white KEEP
+							p 
+								| IF YOU DO NOT TYPE ANYTHING BY 5PM ET, YOUR DEFAULT ANSWER (
+								span.white #{currentPlayer.convertAction(defaultAction)}
+								| ) WILL BE SUBMITED.
+
+					//h3 What will you do today?
 					//label.checkbox
 					//	input(type="checkbox", name="makeDefault")
 					//	small Make this decision my default
-					button.btn.btn-default.popover-trigger(
-								type="submit", 
-								name="action", 
-								value="invest", 
-								class=(locals.currentPlayer && currentPlayer.todaysAction == 'invest' ? 'btn-primary' : ''), 
-								data-title="Invest",
-								data-content="You will invest #{pointsToInvest} points and receive a portion of the combined proceeds."
-						) 
-						| Invest 
-						i.glyphicon.glyphicon-info-sign
+					//button.btn.btn-default.popover-trigger(
+					//			type="submit", 
+					//			name="action", 
+					//			value="invest", 
+					//			class=(locals.currentPlayer && currentPlayer.todaysAction == 'invest' ? 'btn-primary' : ''), 
+					//			data-title="Invest",
+					//			data-content="You will invest #{pointsToInvest} points and receive a portion of the combined proceeds."
+					//	) 
+					//	| Invest 
+					//	i.glyphicon.glyphicon-info-sign
 					
 					
-					button.btn.btn-default.popover-trigger(
-								type="submit", 
-								name="action", 
-								value="freeload", 
-								class=(locals.currentPlayer && currentPlayer.todaysAction == 'freeload' ? 'btn-primary' : ''), 
-								data-title="Freeload",
-								data-content="You will not invest any points, but will receive a portion of the proceeds."
-						)  
-						| Freeload  
-						i.glyphicon.glyphicon-info-sign
+					//button.btn.btn-default.popover-trigger(
+					//			type="submit", 
+					//			name="action", 
+					//			value="freeload", 
+					//			class=(locals.currentPlayer && currentPlayer.todaysAction == 'freeload' ? 'btn-primary' : ''), 
+					//			data-title="Freeload",
+					//			data-content="You will not invest any points, but will receive a portion of the proceeds."
+					//	)  
+					//	| Freeload  
+					//	i.glyphicon.glyphicon-info-sign
 					
-					if(walkawayEnabled && locals.numPlayers > 15)
-						button.btn.btn-default.popover-trigger(
-									type="submit", 
-									name="action", 
-									value="walkaway", 
-									class=(locals.currentPlayer && currentPlayer.todaysAction == 'walkaway' ? 'btn-primary' : ''), 
-									data-title="Leave Group",
-									data-content="You will leave this group and be re-assigned a new group for tomorrow."
-							)  
-							| Leave Group  
-							i.glyphicon.glyphicon-info-sign
+					//if(walkawayEnabled && locals.numPlayers > 15)
+					//	button.btn.btn-default.popover-trigger(
+					//				type="submit", 
+					//				name="action", 
+					//				value="walkaway", 
+					//				class=(locals.currentPlayer && currentPlayer.todaysAction == 'walkaway' ? 'btn-primary' : ''), 
+					//				data-title="Leave Group",
+					//				data-content="You will leave this group and be re-assigned a new group for tomorrow."
+					//		)  
+					//		| Leave Group  
+					//		i.glyphicon.glyphicon-info-sign

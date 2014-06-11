@@ -24,6 +24,7 @@
     "node": "0.10.x"
   },
   "scripts": {
-    "start": "BASEURL=\"http://localhost:5000\" PORT=5000 MONGOHQ_URL=\"mongodb://localhost/freeloader\" CLIENT_ID=53855712d69e4cba82000001 CLIENT_SECRET=50d876cedcac6dc736c034018a2a5366 AUTH_SERVER=\"http://app.dev:8000\" AWS_ACCESS_KEY=AKIAJGTS6FVN4QPODUUA AWS_SECRET=\"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\" supervisor app.js"
+    "jason-start": "BASEURL=\"http://localhost:5000\" PORT=5000 MONGOHQ_URL=\"mongodb://localhost/freeloader\" CLIENT_ID=53855712d69e4cba82000001 CLIENT_SECRET=50d876cedcac6dc736c034018a2a5366 AUTH_SERVER=\"http://app.dev:8000\" AWS_ACCESS_KEY=AKIAJGTS6FVN4QPODUUA AWS_SECRET=\"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\" supervisor app.js",
+    "start": "BASEURL=\"http://localhost:5000\" PORT=5000 MONGOHQ_URL=\"mongodb://localhost/freeloader\" CLIENT_ID=530e6bfe04a741f9620000c8 CLIENT_SECRET=f5e89167a8080098d60ed56954188c2c AUTH_SERVER=\"http://app.dev:8000\" AWS_ACCESS_KEY=AKIAJGTS6FVN4QPODUUA AWS_SECRET=\"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\" config_defaultChoiceProfileQuestion=\"539747f0c33f0d6dfc00006b\" config_walkawayEnabled=\"false\" supervisor app.js"
   }
 }
