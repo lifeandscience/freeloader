@@ -98,10 +98,21 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 			if(!players || !players.length) {
 				console.log("Error: No player exists for remote_user: " + userId + " (New registration, probably)");
 				req.flash('info', 'Thank you for enrolling in this experimonth. The game will begin tomorrow.');
-				res.redirect('/');
+				return res.redirect('/');
 			}
-			else {
-				currentPlayer = players[0];
+			currentPlayer = players[0];
+			Group.findById(currentPlayer.group).exec(function(err, group){
+				if(err || !group){
+					console.log('Error finding this player\'s group!', player._id, player.group, err);
+					req.flash('info', 'There was an error finding your group.');
+					return res.redirect('/');
+				}
+
+				if(!moment().isBefore(group.deadline)){
+					req.flash('info', 'You cannot change your answer after the deadline!');
+					return res.redirect('/');
+				}
+
 				currentPlayer.setAction(req.body.action || null);
 				// currentPlayer.defaultAction = req.body.makeDefault ? req.body.action : null;
 
@@ -136,7 +147,7 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 						});	
 					// }
 				});
-			}
+			});
 		});
 	}
 	else {

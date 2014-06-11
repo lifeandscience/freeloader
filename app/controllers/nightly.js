@@ -7,13 +7,28 @@ var _ = require('underscore');
 var async = require('async');
 var moment = require('moment');
 
-var pickDeadline = function(){
+// Pick an hour between 3PM and Midnight Eastern
+// Configurable 
+var pickDeadline = function(random){
 	var now = moment();
-	now.add(1, 'day');
-	now.hours(0);
 	now.minutes(0);
 	now.seconds(0);
 	now.milliseconds(0);
+	if(random){
+		// 3PM = 15
+		// Midnight = 24
+		var randomHour = Math.floor(Math.random() * (24 - 15 + 1)) + 15;
+		if(randomHour == 24){
+			// It's midnight
+			now.add(1, 'day');
+			now.hours(0);
+		}else{
+			now.hours(randomHour);
+		}
+	}else{
+		now.add(1, 'day');
+		now.hours(0);
+	}
 	return now.toDate();
 }
 
@@ -204,7 +219,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 							//  8		If every player chose to freeload, dissolve this group, reset each player's point value to zero (OR delete them?), and un-enroll them at the auth server (Trello Card #15)
 							var allFreeloaders = _.every(groupMap[groupID].players, function(player){
 								// Only pass this check if moocherPenaltyEnabled is on
-								return config('moocherPenaltyEnabled', experimonth._id) && player.todaysAction == 'freeload';
+								return config('moocherPenaltyEnabled', experimonth._id, false, true) && player.todaysAction == 'freeload';
 							});
 							if(allFreeloaders){
 								if(V) console.log('This group had all freeloaders, so we\'re dissolving the group and adding these users to moochers');
@@ -659,7 +674,7 @@ app.get('/nightly', auth.authorize(2, 10), function(req, res){
 														async.each(groups, function(group, callback){
 															Player.count({group: group._id}).exec(function(err, playerCount){
 																group.num_players = playerCount;
-																group.deadline = pickDeadline();
+																group.deadline = pickDeadline(config('randomDeadline', experimonth._id, false, true));
 																group.save(callback);
 															});
 														}, function(err){
