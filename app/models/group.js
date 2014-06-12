@@ -167,7 +167,7 @@ GroupSchema.statics.doNightly = function(callback){
 						}
 					});
 					if(V) console.log('The smallest group is: ', smallestGroupDetails);
-					return smallestGroupDetails ? smallestGroupDetails.group : null;
+					return smallestGroupDetails ? smallestGroupDetails : null;
 				};
 
 				//  5	Find all the groups within this experimonth and, for each:
