@@ -96,6 +96,7 @@ PlayerSchema.methods.notifyOfEarnedAmount = function(earnedAmount, newBalance, c
 };
 
 PlayerSchema.methods.getDefaultAction = function(callback){
+	var t = this;
 	var conditionID = config('defaultChoiceProfileQuestion', this.experimonth, null);
 	if(!conditionID){
 		// console.log('no conditionID found, so using the config default!');
@@ -105,7 +106,12 @@ PlayerSchema.methods.getDefaultAction = function(callback){
 	return auth.doAuthServerClientRequest('GET', '/api/1/profile/answerForUserAndQuestion/'+this.remote_user+'/'+conditionID, null, function(err, data){
 		// console.log('result: ', err, answer);
 		var value = data && data.value ? data.value : null;
-		if(!value || ['freeload', 'invest'].indexOf(value.toLowerCase()) === -1){
+		if(value && ['keep', 'invest'].indexOf(value.toLowerCase()) !== -1){
+			value = t.convertAction(value.toLowerCase(), true);
+		}else{
+			value = null;
+		}
+		if(!value){
 			// The value wasn't found or isn't a valid choice
 			value = config('defaultAction', this.experimonth);
 		}
@@ -113,8 +119,19 @@ PlayerSchema.methods.getDefaultAction = function(callback){
 	});
 };
 
-PlayerSchema.methods.convertAction = function(action){
+PlayerSchema.methods.convertAction = function(action, inwards){
 	if(action){
+		if(inwards){
+			if(action == 'leave'){
+				return 'walkaway';
+			}
+			if(action == 'keep'){
+				return 'freeload';
+			}
+			if(action == 'invest'){
+				return action;
+			}
+		}
 		if(action == 'walkaway'){
 			return 'leave';
 		}
