@@ -63,6 +63,7 @@ block body
 				h2 #{freeloaders.length}
 				h3 Freeloader#{freeloaders.length != 1 ? 's' : ''}
 				h4 Yesterday
+			- lastTake = 0
 			.people.freeloaders
 				each freeloader, i in freeloaders
 					a.person.freeloader.tooltip-trigger(
