@@ -1,4 +1,4 @@
-
+var _ = require('underscore');
 var cache = {};
 
 var defaults = {
@@ -51,7 +51,7 @@ module.exports = function(property, experimonthID, defaultValue, toBoolean){
 		// console.log('caching!');
 	}
 	if(toBoolean){
-		return value && value.toLowerCase() === 'true'
+		return value && (_.isBoolean(value) || (_.isString(value) && value.toLowerCase() === 'true'));
 	}
 	return value;
 }
