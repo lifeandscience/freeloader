@@ -157,8 +157,15 @@ block body
 									span.white TYPE INVEST  
 									span.gray OR 
 									span.white KEEP
+							- hourLimit = group.deadline.getHours()
+							- meridian = 'AM'
+							if hourLimit > 12
+								- hourLimit -= 12
+								- meridian = 'PM'
+							if hourLimit == 0
+								- hourLimit = 12
 							p 
-								| IF YOU DO NOT TYPE ANYTHING BY 5PM ET, YOUR DEFAULT ANSWER (
+								| IF YOU DO NOT TYPE ANYTHING BY #{hourLimit}#{meridian} ET, YOUR DEFAULT ANSWER (
 								span.white #{currentPlayer.convertAction(defaultAction)}
 								| ) WILL BE SUBMITED.
 
