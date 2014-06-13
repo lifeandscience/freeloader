@@ -1,4 +1,5 @@
-/* Gentium (SIL International) */
+@blue: #00a6df;
+@yellow: #ffc000;
  
 @font-face {
 	font-family: Silom;
@@ -56,7 +57,7 @@ h1.gameTitle {
 	top: 0px;
 	left: 40px;
 	font-size: 18px;
-	color: #00a6df;
+	color: @blue;
 	text-transform: uppercase;
 }
 
@@ -86,7 +87,7 @@ table td {
 }
 .status {
 	position: absolute;
-	top: 0;
+	top: -10px;
 	right: 0;
 
 	.time-left {
@@ -99,19 +100,20 @@ table td {
 		
 		.status-label {
 			display: inline-block;
-			width: 96px;
+			width: 163px;
 		}
 		.time {
 			display: inline-block;
-			width: 92px;
+			width: 135px;
 			text-align: right;
 		}
 	}
-	.bank {
-		display: inline-block;
+	.bank,
+	.group-bank {
+		// display: inline-block;
 		
 		height: 29px;
-		margin-top: 10px;
+		margin-top: 4px;
 		background: transparent url('../images/money.png') scroll no-repeat left top;
 		padding-left: 65px;
 		font-size: 18px;
@@ -120,12 +122,16 @@ table td {
 		
 		.status-label {
 			display: inline-block;
-			width: 63px;
+			width: 130px;
 		}
 		.balance {
 			display: inline-block;
-			width: 100px;
+			width: 143px;
 			text-align: right;
+		}
+		
+		&.group-bank {
+			background-image: url('../images/group-bank.png');
 		}
 	}
 	.status-label {
@@ -330,7 +336,11 @@ table td {
 			background: transparent;
 			border: none;
 			outline: none;
-			color: #00a6df;
+			color: @blue;
+			
+			&.submitted {
+				color: @yellow;
+			}
 		}
 		.decision-help {
 			// display: block;
@@ -341,7 +351,7 @@ table td {
 			font-size: 12px;
 			line-height: 1.2em;
 			opacity: 0.6;
-			color: #ffc000;
+			color: @yellow;
 			margin-left: 5px;
 
 			p {

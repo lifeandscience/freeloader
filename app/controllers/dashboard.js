@@ -51,6 +51,10 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 					var groups = _.groupBy(players, function(player){
 						return player.lastAction;
 					});
+					args.groupBalance = 0;
+					_.each(players, function(player){
+						args.groupBalance += player.balance;
+					})
 					args.numPlayers = players.length;
 					args.investors = groups.invest || [];
 					args.freeloaders = groups.freeload || [];

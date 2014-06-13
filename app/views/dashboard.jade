@@ -29,10 +29,16 @@ block body
 			.status
 				.time-left
 					span.status-label Time Left:
-					span.time(data-date=(locals.group ? group.deadline+'' : ''))
+					span.time(
+						data-date=(locals.group ? group.deadline+'' : ''),
+						data-choice-made=locals.currentPlayer && locals.currentPlayer.todaysAction
+					)
 				.bank
-					span.status-label Bank: 
+					span.status-label My Bank: 
 					span.balance $#{locals.currentPlayer ? currentPlayer.balance.toFixed(2) : '0.00'}
+				.group-bank
+					span.status-label Group Bank: 
+					span.balance $#{locals.groupBalance ? groupBalance.toFixed(2) : '0.00'}
 			- var lastTake = 0
 			.sign.investor-sign
 				h2 #{investors.length}
@@ -134,9 +140,6 @@ block body
 					p YOU HAVE BEEN GIVEN ONE DOLLAR. YOU CAN INVEST IT, KEEP IT FOR YOURSELF, OR SPEND IT TO LEAVE THIS GROUP. WHAT DO YOU DECIDE?
 				else
 					p YOU HAVE BEEN GIVEN ONE DOLLAR. YOU CAN INVEST IT OR KEEP IT FOR YOURSELF. WHAT DO YOU DECIDE?
-				
-				if locals.currentPlayer && currentPlayer.todaysAction
-					p Your current choice is to #{currentPlayer.convertAction(currentPlayer.todaysAction)}.
 
 				form(action="/play", method="post")
 					.decision-label 
@@ -144,8 +147,11 @@ block body
 					.decision-input
 						input.action-input(
 								type="text",
-								name="action"
+								name="action",
+								value=(locals.currentPlayer && currentPlayer.todaysAction ? currentPlayer.convertAction(currentPlayer.todaysAction) : null),
+								class=(locals.currentPlayer && currentPlayer.todaysAction ? 'submitted' : null),
 							)
+						//- disabled=(locals.currentPlayer && currentPlayer.todaysAction ? 'disabled' : false)
 						.decision-help
 							if walkawayEnabled
 								p 
@@ -167,7 +173,8 @@ block body
 							p 
 								| IF YOU DO NOT TYPE ANYTHING BY #{hourLimit}#{meridian} ET, YOUR DEFAULT ANSWER (
 								span.white #{currentPlayer.convertAction(defaultAction)}
-								| ) WILL BE SUBMITED.
+								| ) WILL BE SUBMITED. 
+								a(href=process.env.AUTH_SERVER+'/profile/additional-info') Change Your Default
 
 					//h3 What will you do today?
 					//label.checkbox

@@ -1,4 +1,3 @@
-/* Gentium (SIL International) */
 @font-face {
   font-family: Silom;
   src: url('/fonts/silom.woff') format("woff"), url('/fonts/silom.ttf') format("truetype");
@@ -70,7 +69,7 @@ table td {
 }
 .status {
   position: absolute;
-  top: 0;
+  top: -10px;
   right: 0;
 }
 .status .time-left {
@@ -83,31 +82,37 @@ table td {
 }
 .status .time-left .status-label {
   display: inline-block;
-  width: 96px;
+  width: 163px;
 }
 .status .time-left .time {
   display: inline-block;
-  width: 92px;
+  width: 135px;
   text-align: right;
 }
-.status .bank {
-  display: inline-block;
+.status .bank,
+.status .group-bank {
   height: 29px;
-  margin-top: 10px;
+  margin-top: 4px;
   background: transparent url('../images/money.png') scroll no-repeat left top;
   padding-left: 65px;
   font-size: 18px;
   line-height: 1em;
   padding-top: 2px;
 }
-.status .bank .status-label {
+.status .bank .status-label,
+.status .group-bank .status-label {
   display: inline-block;
-  width: 63px;
+  width: 130px;
 }
-.status .bank .balance {
+.status .bank .balance,
+.status .group-bank .balance {
   display: inline-block;
-  width: 100px;
+  width: 143px;
   text-align: right;
+}
+.status .bank.group-bank,
+.status .group-bank.group-bank {
+  background-image: url('../images/group-bank.png');
 }
 .sign {
   text-align: center;
@@ -279,6 +284,9 @@ table td {
   border: none;
   outline: none;
   color: #00a6df;
+}
+.decision-form .decision-input input.submitted {
+  color: #ffc000;
 }
 .decision-form .decision-input .decision-help {
   font-size: 12px;
