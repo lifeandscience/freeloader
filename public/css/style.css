@@ -152,6 +152,12 @@ table td {
   height: 111px;
   background: transparent scroll no-repeat left top;
 }
+.people .person.investor {
+  background-image: url('../images/person-facing-right.png');
+}
+.people .person.freeloader {
+  background-image: url('../images/person-facing-left.png');
+}
 .people .person.you:before {
   content: '';
   display: block;
@@ -165,7 +171,6 @@ table td {
   left: 100px;
 }
 .people.investors .investor {
-  background-image: url('../images/person-facing-right.png');
   float: left;
   margin-right: 10px;
 }
@@ -188,7 +193,6 @@ table td {
   right: 129px;
 }
 .people.freeloaders .freeloader {
-  background-image: url('../images/person-facing-left.png');
   float: right;
   margin-left: 10px;
 }
@@ -206,6 +210,28 @@ table td {
 }
 .people.freeloaders .freeloader:nth-child(4n+13) {
   margin-right: 0;
+}
+.people.newGame {
+  left: 310px;
+}
+.people.newGame .person {
+  float: left;
+  margin-right: 10px;
+}
+.people.newGame .person:nth-child(1n+5) {
+  margin-top: -65px;
+}
+.people.newGame .person:nth-child(1n+9) {
+  margin-top: -75px;
+}
+.people.newGame .person:nth-child(4n+5) {
+  margin-left: 25px;
+}
+.people.newGame .person:nth-child(4n+9) {
+  margin-left: -15px;
+}
+.people.newGame .person:nth-child(4n+13) {
+  margin-left: 0;
 }
 .take {
   background-color: black;

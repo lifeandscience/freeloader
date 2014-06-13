@@ -173,6 +173,13 @@ table td {
 		width: 60px;
 		height: 111px;
 		background: transparent scroll no-repeat left top;
+
+		&.investor {
+			background-image: url('../images/person-facing-right.png');
+		}
+		&.freeloader {
+			background-image: url('../images/person-facing-left.png');
+		}
 		
 		&.you:before {
 			content: '';
@@ -189,7 +196,6 @@ table td {
 		left: 100px;
 
 		.investor {
-			background-image: url('../images/person-facing-right.png');
 			float: left;
 			margin-right: 10px;
 
@@ -219,7 +225,6 @@ table td {
 		right: 129px;
 
 		.freeloader {
-			background-image: url('../images/person-facing-left.png');
 			float: right;
 			margin-left: 10px;
 
@@ -242,6 +247,36 @@ table td {
 			// The 13th item
 			&:nth-child(4n+13){
 				margin-right: 0;
+			}
+		}
+	}
+
+	&.newGame {
+		left: 310px;
+
+		.person {
+			float: left;
+			margin-right: 10px;
+
+			// Items after the first 4
+			&:nth-child(1n+5) {
+				margin-top: -65px;
+			}
+			// Items after the first 8
+			&:nth-child(1n+9) {
+				margin-top: -75px;
+			}
+			// The 5th item
+			&:nth-child(4n+5){
+				margin-left: 25px;
+			}
+			// The 9th item
+			&:nth-child(4n+9){
+				margin-left: -15px;
+			}
+			// The 13th item
+			&:nth-child(4n+13){
+				margin-left: 0;
 			}
 		}
 	}

@@ -45,13 +45,13 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 				args.currentExperimonthId = currentExperimonthId;
 				args.currentPlayer = currentPlayer;
 				args.pointsToInvest = config('pointsToInvest', currentExperimonthId);
-				args.numPlayers = players.length;
 				args.walkawayEnabled = config('walkawayEnabled', currentExperimonthId, false, true);
 
 				Player.find({group: currentPlayer.group}).exec(function(err, players){
 					var groups = _.groupBy(players, function(player){
 						return player.lastAction;
 					});
+					args.numPlayers = players.length;
 					args.investors = groups.invest || [];
 					args.freeloaders = groups.freeload || [];
 
