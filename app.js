@@ -86,7 +86,7 @@ app.configure(function(){
 		var EM_NAV = [
 			{
 				'name': 'Home',
-				'link': _BASEURL+'/',
+				'link': process.env.AUTH_SERVER
 			},
 			{
 				'name': 'Play!',
