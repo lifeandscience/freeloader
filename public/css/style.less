@@ -85,29 +85,33 @@ table td {
 	margin: 0 5px;
 	text-align: center;
 }
-.status {
+.time-left {
 	position: absolute;
 	top: -10px;
 	right: 0;
 
-	.time-left {
-		height: 29px;
-		background: transparent url('../images/clock-gray.png') scroll no-repeat left top;
-		padding-left: 40px;
-		font-size: 18px;
-		line-height: 1em;
-		padding-top: 5px;
-		
-		.status-label {
-			display: inline-block;
-			width: 163px;
-		}
-		.time {
-			display: inline-block;
-			width: 135px;
-			text-align: right;
-		}
+	height: 29px;
+	background: transparent url('../images/clock-gray.png') scroll no-repeat left top;
+	padding-left: 40px;
+	font-size: 18px;
+	line-height: 1em;
+	padding-top: 5px;
+	
+	.status-label {
+		display: inline-block;
+		width: 163px;
 	}
+	.time {
+		display: inline-block;
+		width: 135px;
+		text-align: right;
+	}
+}
+.status {
+	position: absolute;
+	top: 22px;
+	right: 0;
+
 	.bank,
 	.group-bank {
 		// display: inline-block;
@@ -366,4 +370,72 @@ table td {
 		}
 	}
 }
+// Handle <980px navbar changes
+@media (max-width: 980px) {
+	html {
+		padding-top: 0;
+	}
+}
 
+// Handle layout for 'small-desktop' (900px-1100px)
+@media (min-width: 900px) and (max-width: 1100px) {
+	html {
+		body {
+			> .container {
+				> #container-inner {
+					margin: 0 auto;
+					width: 889px;
+					height: 402px;
+					background: transparent url('../images/scene-bg-small-desktop.png') no-repeat top left;	
+					padding-top: 420px;
+				}
+			}
+		}
+	} 
+	.sign.investor-sign {
+		top: 81px;
+		left: 21px;
+	}
+	.sign.freeloader-sign {
+		top: 82px;
+		right: 13px;
+	}
+	.people {
+		top: 124px;
+	}
+	.take {
+		top: 352px;
+	}
+	.status {
+		position: absolute;
+		top: -15px;
+		right: 0;
+
+		.bank,
+		.group-bank {
+			margin-top: 0;
+		}
+	}
+	.time-left {
+		background: none;
+		padding-left: 0;
+		
+		bottom: -90px;
+		right: 120px;
+		top: auto;
+		
+		font-size: 18px;
+		line-height: 1em;
+		padding-top: 5px;
+		
+		.status-label {
+			display: inline-block;
+			width: 105px;
+		}
+		.time {
+			display: inline-block;
+			width: 92px;
+			text-align: right;
+		}
+	}
+}

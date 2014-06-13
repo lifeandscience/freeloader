@@ -26,13 +26,13 @@ block body
 						input(type='submit',value='Save')
 
 		- if (locals.currentExperimonthId)
+			.time-left
+				span.status-label Time Left:
+				span.time(
+					data-date=(locals.group ? group.deadline+'' : ''),
+					data-choice-made=locals.currentPlayer && locals.currentPlayer.todaysAction
+				)
 			.status
-				.time-left
-					span.status-label Time Left:
-					span.time(
-						data-date=(locals.group ? group.deadline+'' : ''),
-						data-choice-made=locals.currentPlayer && locals.currentPlayer.todaysAction
-					)
 				.bank
 					span.status-label My Bank: 
 					span.balance $#{locals.currentPlayer ? currentPlayer.balance.toFixed(2) : '0.00'}
