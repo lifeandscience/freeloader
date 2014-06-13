@@ -146,6 +146,7 @@ PlayerSchema.methods.convertAction = function(action, inwards){
 }
 
 PlayerSchema.methods.setAction = function(action){
+	action = action ? action.toLowerCase() : '';
 	if(action == 'freeload' || action == 'invest'){
 		this.todaysAction = action;
 	}else if(action == 'keep'){
