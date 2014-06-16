@@ -458,8 +458,8 @@ table td {
   }
   .time-left .time {
     display: inline-block;
-    width: 50px;
-    text-align: right;
+    width: 70px;
+    text-align: left;
   }
   .sign {
     width: 71px;
