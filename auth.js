@@ -31,12 +31,14 @@ var populatePlayer = function(auth, req, res, next){
 			var memberships = []; //array of *active* experimonth ids that this user is a member of
 			for(var x=0; x < experimonths.length; x++) {
 				var month = experimonths[x];
-				inner: for(var y=0; y < month.users.length; y++) {
-					var uid = month.users[y]._id;
-					if(uid === req.user._id) {
-						memberships.push(month);
-						break inner;
-					}
+                if(month && month.users){
+    				inner: for(var y=0; y < month.users.length; y++) {
+    					var uid = month.users[y]._id;
+    					if(uid === req.user._id) {
+    						memberships.push(month);
+    						break inner;
+    					}
+                    }
 				}
 			}
 			if(memberships.length) {
