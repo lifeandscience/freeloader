@@ -27,7 +27,10 @@ block body
 
 		- if (locals.currentExperimonthId)
 			.time-left
-				span.status-label Time Left:
+				span.status-label 
+					| Time
+					span.hidden-phone  Left
+					| :
 				span.time(
 					data-date=(locals.group ? group.deadline+'' : ''),
 					data-choice-made=locals.currentPlayer && locals.currentPlayer.todaysAction
@@ -62,15 +65,15 @@ block body
 						)
 					- lastTake = investor.lastTake
 				//-
-					//- Test people
-					- for(var i=0; i<12; i++)
-						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
-						a.person.investor.tooltip-trigger(
-								data-player-id="test"
-								data-player-balance=fauxBalance,
-								data-toggle="popover",
-								data-title="Balance: $"+fauxBalance
-							)
+				//- Test people
+				- for(var i=0; i<12; i++)
+					- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+					a.person.investor.tooltip-trigger(
+							data-player-id="test"
+							data-player-balance=fauxBalance,
+							data-toggle="popover",
+							data-title="Balance: $"+fauxBalance
+						)
 			.take.investor-take Investors' Take: $#{lastTake.toFixed(2)}
 			.sign.freeloader-sign
 				h2 #{freeloaders.length}
@@ -96,20 +99,19 @@ block body
 						)
 					- lastTake = freeloader.lastTake
 				//-
-					//- Test people
-					- for(var i=0; i<12; i++)
-						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
-						a.person.freeloader.tooltip-trigger(
-								data-player-id="test"
-								data-player-balance=fauxBalance,
-								data-toggle="popover",
-								data-title="Balance: $"+fauxBalance
-							)
+				//- Test people
+				- for(var i=0; i<12; i++)
+					- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+					a.person.freeloader.tooltip-trigger(
+							data-player-id="test"
+							data-player-balance=fauxBalance,
+							data-toggle="popover",
+							data-title="Balance: $"+fauxBalance
+						)
 			.take.freeloader-take Freeloaders' Take: $#{lastTake.toFixed(2)}
 
 			if freeloaders.length == 0 && investors.length == 0
 				.people.newGame
-					//- Test people
 					- choices = ['freeloader', 'investor']
 					- skipMe = locals.currentPlayer && locals.currentPlayer.todaysAction
 					- for(var i=0; i<numPlayers; i++)
@@ -154,12 +156,12 @@ block body
 						//- disabled=(locals.currentPlayer && currentPlayer.todaysAction ? 'disabled' : false)
 						.decision-help
 							if walkawayEnabled
-								p 
+								p.type
 									span.white TYPE INVEST, KEEP, 
 									span.gray OR 
 									span.white LEAVE
 							else
-								p 
+								p.type
 									span.white TYPE INVEST  
 									span.gray OR 
 									span.white KEEP
@@ -170,7 +172,7 @@ block body
 								- meridian = 'PM'
 							if hourLimit == 0
 								- hourLimit = 12
-							p 
+							p.deadline
 								| IF YOU DO NOT TYPE ANYTHING BY #{hourLimit}#{meridian} ET, YOUR DEFAULT ANSWER (
 								span.white #{currentPlayer.convertAction(defaultAction)}
 								| ) WILL BE SUBMITED. 
