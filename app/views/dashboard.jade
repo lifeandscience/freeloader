@@ -67,15 +67,15 @@ block body
 						)
 					- lastTake = investor.lastTake
 				//-
-				//- Test people
-				- for(var i=0; i<12; i++)
-					- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
-					a.person.investor.tooltip-trigger(
-							data-player-id="test"
-							data-player-balance=fauxBalance,
-							data-toggle="popover",
-							data-title="Balance: $"+fauxBalance
-						)
+					//- Test people
+					- for(var i=0; i<12; i++)
+						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+						a.person.investor.tooltip-trigger(
+								data-player-id="test"
+								data-player-balance=fauxBalance,
+								data-toggle="popover",
+								data-title="Balance: $"+fauxBalance
+							)
 			.take.investor-take Investors' Take: $#{lastTake.toFixed(2)}
 			.sign.freeloader-sign
 				h2 #{freeloaders.length}
@@ -102,15 +102,15 @@ block body
 						)
 					- lastTake = freeloader.lastTake
 				//-
-				//- Test people
-				- for(var i=0; i<12; i++)
-					- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
-					a.person.freeloader.tooltip-trigger(
-							data-player-id="test"
-							data-player-balance=fauxBalance,
-							data-toggle="popover",
-							data-title="Balance: $"+fauxBalance
-						)
+					//- Test people
+					- for(var i=0; i<12; i++)
+						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+						a.person.freeloader.tooltip-trigger(
+								data-player-id="test"
+								data-player-balance=fauxBalance,
+								data-toggle="popover",
+								data-title="Balance: $"+fauxBalance
+							)
 			.take.freeloader-take Freeloaders' Take: $#{lastTake.toFixed(2)}
 
 			if freeloaders.length == 0 && investors.length == 0
