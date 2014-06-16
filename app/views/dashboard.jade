@@ -47,6 +47,8 @@ block body
 				h2 #{investors.length}
 				h3 Investor#{investors.length != 1 ? 's' : ''}
 				h4 Yesterday
+			.prompt.investor-prompt Click an avatar to see bank balance.
+			.prompt.mobile-prompt Tap an avatar to see bank balance.
 			.people.investors
 				if freeloaders.length == 0 && investors.length == 0 && locals.currentPlayer && locals.currentPlayer.todaysAction == 'invest'
 					a.person.investor.tooltip-trigger.you(
@@ -79,6 +81,7 @@ block body
 				h2 #{freeloaders.length}
 				h3 Freeloader#{freeloaders.length != 1 ? 's' : ''}
 				h4 Yesterday
+			.prompt.freeloader-prompt Click an avatar to see bank balance.
 			- lastTake = 0
 			.people.freeloaders
 				if freeloaders.length == 0 && investors.length == 0 && locals.currentPlayer && locals.currentPlayer.todaysAction == 'freeload'

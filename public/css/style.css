@@ -239,6 +239,25 @@ table td {
 .people.newGame .person:nth-child(4n+13) {
   margin-left: 0;
 }
+.prompt {
+  width: 65px;
+  position: absolute;
+  top: 370px;
+  font-size: 12px;
+  line-height: 1em;
+  color: #303d3d;
+  text-transform: none;
+}
+.prompt.mobile-prompt {
+  display: none;
+}
+.prompt.investor-prompt {
+  left: 10px;
+}
+.prompt.freeloader-prompt {
+  right: 30px;
+  text-align: right;
+}
 .take {
   background-color: black;
   color: white;
@@ -364,6 +383,14 @@ table td {
     display: inline-block;
     width: 92px;
     text-align: right;
+  }
+  .prompt.investor-prompt {
+    left: 395px;
+    top: 340px;
+    text-align: center;
+  }
+  .prompt.freeloader-prompt {
+    display: none;
   }
 }
 @media (max-width: 900px) {
@@ -574,5 +601,18 @@ table td {
     width: 320px;
     top: 20px;
     left: 0;
+  }
+  .prompt.mobile-prompt {
+    display: block;
+    left: 0;
+    top: 194px;
+    left: 90px;
+    width: 220px;
+    text-align: left;
+    font-size: 6px;
+  }
+  .prompt.investor-prompt,
+  .prompt.freeloader-prompt {
+    display: none;
   }
 }

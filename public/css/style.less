@@ -292,6 +292,26 @@ table td {
 		}
 	}
 }
+.prompt {
+	width: 65px;
+	position: absolute;
+	top: 370px;
+	font-size: 12px;
+	line-height: 1em;
+	color: #303d3d;
+	text-transform: none;
+
+	&.mobile-prompt {
+		display: none;
+	}
+	&.investor-prompt {
+		left: 10px;
+	}
+	&.freeloader-prompt {
+		right: 30px;
+		text-align: right;
+	}
+}
 
 .take {
 	background-color: black;
@@ -443,6 +463,16 @@ table td {
 			display: inline-block;
 			width: 92px;
 			text-align: right;
+		}
+	}
+	.prompt {
+		&.investor-prompt {
+			left: 395px;
+			top: 340px;
+			text-align: center;
+		}
+		&.freeloader-prompt {
+			display: none;
 		}
 	}
 }
@@ -680,6 +710,21 @@ table td {
 					}
 				}
 			}
+		}
+	}
+	.prompt {
+		&.mobile-prompt {
+			display: block;
+			left: 0;
+			top: 194px;
+			left: 90px;
+			width: 220px;
+			text-align: left;
+			font-size: 6px;
+		}
+		&.investor-prompt,
+		&.freeloader-prompt {
+			display: none;
 		}
 	}	
 }

@@ -2,8 +2,11 @@ jQuery(function(){
 	jQuery('.action-input:not(.submitted)').focus();
 
 	jQuery('.tooltip-trigger').tooltip({
+		trigger: 'click',
 		placement: 'top',
 		container: 'body'
+	}).on('show.bs.tooltip', function(){
+		var otherTips = jQuery('.tooltip-trigger').not(this).tooltip('hide');
 	});
 	
 	var timeContainer = jQuery('span.time');
