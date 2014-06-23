@@ -176,10 +176,15 @@ block body
 							if hourLimit == 0
 								- hourLimit = 12
 							p.deadline
-								| IF YOU DO NOT TYPE ANYTHING BY #{hourLimit}#{meridian} ET, YOUR DEFAULT ANSWER (
-								span.white #{currentPlayer.convertAction(defaultAction)}
-								| ) WILL BE SUBMITED. 
-								a(href=process.env.AUTH_SERVER+'/profile/additional-info') Change Your Default
+								if changeable
+									| IF YOU DO NOT TYPE ANYTHING BY #{hourLimit}#{meridian} ET, YOUR DEFAULT ANSWER (
+									span.white #{currentPlayer.convertAction(defaultAction)}
+									| ) WILL BE SUBMITED. 
+									a(href=process.env.AUTH_SERVER+'/profile/additional-info') Change Your Default
+								else
+									| IF YOU DO NOT TYPE ANYTHING BY #{hourLimit}#{meridian} ET, THE DEFAULT ANSWER (
+									span.white #{currentPlayer.convertAction(defaultAction)}
+									| ) WILL BE SUBMITED.
 
 					//h3 What will you do today?
 					//label.checkbox

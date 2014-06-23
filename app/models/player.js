@@ -99,12 +99,12 @@ PlayerSchema.methods.getDefaultAction = function(callback){
 	var t = this;
 	var conditionID = config('defaultChoiceProfileQuestion', this.experimonth, null);
 	if(!conditionID){
-		// console.log('no conditionID found, so using the config default!');
-		return callback(config('defaultAction', this.experimonth));
+		return callback(config('defaultAction', this.experimonth), false);
 	}
 	// console.log('asking auth server for default based on ', conditionID, this.remote_user);
 	return auth.doAuthServerClientRequest('GET', '/api/1/profile/answerForUserAndQuestion/'+this.remote_user+'/'+conditionID, null, function(err, data){
 		// console.log('result: ', err, answer);
+		var changeable = true;
 		var value = data && data.value ? data.value : null;
 		if(value && ['keep', 'invest'].indexOf(value.toLowerCase()) !== -1){
 			value = t.convertAction(value.toLowerCase(), true);
@@ -114,8 +114,9 @@ PlayerSchema.methods.getDefaultAction = function(callback){
 		if(!value){
 			// The value wasn't found or isn't a valid choice
 			value = config('defaultAction', this.experimonth);
+			changeable = false;
 		}
-		callback(value);
+		callback(value, changeable);
 	});
 };
 
