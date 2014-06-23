@@ -137,7 +137,7 @@ PlayerSchema.methods.convertAction = function(action, inwards){
 				return 'leave';
 			}
 			// if(action == 'freeload'){
-			// 	return 'keep';
+			//	return 'keep';
 			// }
 			if(action == 'invest' || action == 'freeload'){
 				return action;
@@ -145,21 +145,21 @@ PlayerSchema.methods.convertAction = function(action, inwards){
 		}
 	}
 	return '';
-}
+};
 
 PlayerSchema.methods.setAction = function(action){
 	action = action ? action.toLowerCase() : '';
 	if(action == 'freeload' || action == 'invest'){
 		this.todaysAction = action;
 	}else if(action == 'keep'){
-		this.todaysAction = 'freeload'
+		this.todaysAction = 'freeload';
 	}else if(config('walkawayEnabled', this.remote_user, false, true) && action == 'leave'){
 		this.todaysAction = 'walkaway';
 	}else{
 		this.todaysAction = null;
 	}
 	return;
-}
+};
 
 var Player = mongoose.model('Player', PlayerSchema);
 module.exports = Player;
