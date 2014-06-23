@@ -160,14 +160,14 @@ block body
 						.decision-help
 							if walkawayEnabled
 								p.type
-									span.white TYPE INVEST, KEEP, 
+									span.white TYPE INVEST, FREELOAD, 
 									span.gray OR 
 									span.white LEAVE
 							else
 								p.type
 									span.white TYPE INVEST  
 									span.gray OR 
-									span.white KEEP
+									span.white FREELOAD
 							- hourLimit = group.deadline.getHours()
 							- meridian = 'AM'
 							if hourLimit > 12

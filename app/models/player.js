@@ -136,10 +136,10 @@ PlayerSchema.methods.convertAction = function(action, inwards){
 			if(action == 'walkaway'){
 				return 'leave';
 			}
-			if(action == 'freeload'){
-				return 'keep';
-			}
-			if(action == 'invest'){
+			// if(action == 'freeload'){
+			// 	return 'keep';
+			// }
+			if(action == 'invest' || action == 'freeload'){
 				return action;
 			}
 		}
