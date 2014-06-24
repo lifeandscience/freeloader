@@ -54,4 +54,4 @@ module.exports = function(property, experimonthID, defaultValue, toBoolean){
 		return value && (_.isBoolean(value) || (_.isString(value) && value.toLowerCase() === 'true'));
 	}
 	return value;
-}
+};

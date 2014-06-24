@@ -54,7 +54,7 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 					args.groupBalance = 0;
 					_.each(players, function(player){
 						args.groupBalance += player.balance;
-					})
+					});
 					args.numPlayers = players.length;
 					args.investors = groups.invest || [];
 					args.freeloaders = groups.freeload || [];
@@ -117,40 +117,36 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 					req.flash('info', 'You cannot change your answer after the deadline!');
 					return res.redirect('/');
 				}
-
+				// if(!currentPlayer.canSetAction(req.body.action || null)){
+				// 	req.flash('error', 'You cannot ');
+				// 	return;
+				// }
 				currentPlayer.setAction(req.body.action || null);
-				// currentPlayer.defaultAction = req.body.makeDefault ? req.body.action : null;
-
-				// Tell the auth server about this user changing their vote
-				auth.doAuthServerClientRequest('POST', '/api/1/events', {
-					user: currentPlayer.remote_user,
-					experimonth: currentExperimonthId,
-					client_id: process.env.CLIENT_ID,
-					name: 'freeloader:setAction',
-					value: currentPlayer.todaysAction
-				}, function(err, body){
-				
-					// if(req.body.action == 'invest' && currentPlayer.balance < config.pointsToInvest){
-					// 	req.flash('error', 'You don\'t have enough points to invest. <p>You must have at least ' + config.pointsToInvest + ' points to invest. You have ' + currentPlayer.balance + ' points.</p>');
-					// 	res.redirect('/');
-					// }
-					// else {
-						currentPlayer.save(function(err){
-							if(err){
-								console.log("Error: Unable to save action for remove_user: " + userId + " (Error: " + err + ")");
-								req.flash('error', 'An error occurred while trying to save your action. Please try again.');
-							}else if(!currentPlayer.todaysAction){
-								if(config('walkawayEnabled', currentPlayer.remote_user, false, true)){
-									req.flash('info', 'That choice wasn\'t recognized. Please type "invest", "keep", or "leave".');
-								}else{
-									req.flash('info', 'That choice wasn\'t recognized. Please type "invest" or "keep".');
-								}
-							}else{
-								req.flash('success', 'Your choice was saved successfully!');
-							}
+				currentPlayer.save(function(err){
+					if(err){
+						console.log("Error: Unable to save action for remove_user: " + userId + " (Error: " + err + ")");
+						req.flash('error', 'An error occurred while trying to save your action. Please try again.');
+					}else if(!currentPlayer.todaysAction){
+						if(config('walkawayEnabled', currentPlayer.experimonth, false, true)){
+							req.flash('info', 'That choice wasn\'t recognized. Please type "invest", "keep", or "leave".');
+						}else{
+							req.flash('info', 'That choice wasn\'t recognized. Please type "invest" or "keep".');
+						}
+					}else{
+						// Tell the auth server about this user changing their vote
+						auth.doAuthServerClientRequest('POST', '/api/1/events', {
+							user: currentPlayer.remote_user,
+							experimonth: currentExperimonthId,
+							client_id: process.env.CLIENT_ID,
+							name: 'freeloader:setAction',
+							value: currentPlayer.todaysAction
+						}, function(err, body){
+							req.flash('success', 'Your choice was saved successfully!');
 							res.redirect('/');
-						});	
-					// }
+						});
+						return;
+					}
+					res.redirect('/');
 				});
 			});
 		});

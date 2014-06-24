@@ -153,7 +153,7 @@ PlayerSchema.methods.setAction = function(action){
 		this.todaysAction = action;
 	}else if(action == 'keep'){
 		this.todaysAction = 'freeload';
-	}else if(config('walkawayEnabled', this.remote_user, false, true) && action == 'leave'){
+	}else if(config('walkawayEnabled', this.experimonth, false, true) && action == 'leave'){
 		this.todaysAction = 'walkaway';
 	}else{
 		this.todaysAction = null;

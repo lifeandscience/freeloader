@@ -35,7 +35,7 @@ var pickDeadline = function(random){
 		now.hours(0);
 	}
 	return now.toDate();
-}
+};
 
 GroupSchema.statics.doNightly = function(callback){
 	var Player = mongoose.model('Player');
@@ -210,7 +210,7 @@ GroupSchema.statics.doNightly = function(callback){
 									return;
 								}
 								return callback(true);
-							}
+							};
 							if(!player.todaysAction) {
 								player.getDefaultAction(function(defaultAction){
 									if(V) console.log('got default action for player:', player.remote_user, defaultAction);
