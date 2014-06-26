@@ -19,6 +19,10 @@ app.get('/', auth.authorize(), function(req, res){
 	res.render('index', { title: appTitle });
 });
 
+app.get('/faq', function(req, res){
+	res.render('faq', { title: appTitle });
+});
+
 app.post('/setExperimonth', function(req, res){
 	if(req.body && req.body.experimonth) {
 		req.session.experimonth.current = req.body.experimonth;

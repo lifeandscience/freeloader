@@ -93,6 +93,10 @@ app.configure(function(){
 				'link': _BASEURL + '/play',
 			},
 			{
+				'name': 'F.A.Q.',
+				'link': _BASEURL + '/faq',
+			},
+			{
 				'name': 'Confess',
 				'link': process.env.AUTH_SERVER + '/confess'
 			}

@@ -32,6 +32,11 @@ html {
 			// overflow: scroll;
 			text-transform: uppercase;
 			
+			> #container-inner-no-bg {
+				margin: 0 auto;
+				width: 914px;
+				position: relative;
+			}
 			> #container-inner {
 				margin: 0 auto;
 				width: 914px;
@@ -41,6 +46,16 @@ html {
 				
 				/* temporary */
 				padding-top: 600px;
+			}
+			
+			dl {
+				dt {
+					color: @blue;
+				}
+				strong {
+					color: @yellow;
+					text-shadow: 1px 1px 1px black;
+				}
 			}
 		}
 	}
@@ -409,6 +424,10 @@ table td {
 	html {
 		body {
 			> .container {
+				> #container-inner-no-bg {
+					margin: 0 auto;
+					width: 889px;
+				}
 				> #container-inner {
 					margin: 0 auto;
 					width: 889px;
@@ -489,6 +508,10 @@ table td {
 				padding-left: 0;
 				padding-right: 0;
 
+				> #container-inner-no-bg {
+					margin: 0 auto;
+					width: 320px;
+				}
 				> #container-inner {
 					margin: 0 auto;
 					width: 320px;

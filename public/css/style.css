@@ -22,6 +22,11 @@ html body > .container {
   padding-top: 25px;
   text-transform: uppercase;
 }
+html body > .container > #container-inner-no-bg {
+  margin: 0 auto;
+  width: 914px;
+  position: relative;
+}
 html body > .container > #container-inner {
   margin: 0 auto;
   width: 914px;
@@ -30,6 +35,13 @@ html body > .container > #container-inner {
   position: relative;
   /* temporary */
   padding-top: 600px;
+}
+html body > .container dl dt {
+  color: #00a6df;
+}
+html body > .container dl strong {
+  color: #ffc000;
+  text-shadow: 1px 1px 1px black;
 }
 .popover > .popover-title,
 .popover > .popover-content {
@@ -335,6 +347,10 @@ table td {
   }
 }
 @media (min-width: 900px) and (max-width: 1100px) {
+  html body > .container > #container-inner-no-bg {
+    margin: 0 auto;
+    width: 889px;
+  }
   html body > .container > #container-inner {
     margin: 0 auto;
     width: 889px;
@@ -401,6 +417,10 @@ table td {
     padding-top: 10px;
     padding-left: 0;
     padding-right: 0;
+  }
+  html body > .container > #container-inner-no-bg {
+    margin: 0 auto;
+    width: 320px;
   }
   html body > .container > #container-inner {
     margin: 0 auto;
