@@ -38,7 +38,7 @@ app.get('/play', auth.authorize(1, 0, null, true), function(req, res){
 		Player.find({ remote_user: userId,  experimonth: currentExperimonthId }).exec(function(err, players){
 			if(!players || !players.length) {
 				console.log("Error: No player exists for remote_user: " + userId + " (New registration, probably)");
-				req.flash('info', 'Thank you for enrolling in this experimonth. The game will begin tomorrow.');
+				req.flash('info', 'Thank you for enrolling in this Expermonth. You will be notified by email when the game begins.');
 				res.render('dashboard', args);
 			}else{
 				currentPlayer = players[0];
@@ -103,7 +103,7 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 		Player.find({ remote_user: userId,  experimonth: currentExperimonthId }).exec(function(err, players){
 			if(!players || !players.length) {
 				console.log("Error: No player exists for remote_user: " + userId + " (New registration, probably)");
-				req.flash('info', 'Thank you for enrolling in this experimonth. The game will begin tomorrow.');
+				req.flash('info', 'Thank you for enrolling in this Expermonth. You will be notified by email when the game begins.');
 				return res.redirect('/');
 			}
 			currentPlayer = players[0];
