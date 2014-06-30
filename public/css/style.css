@@ -27,6 +27,11 @@ html body > .container > #container-inner-no-bg {
   width: 914px;
   position: relative;
 }
+html body > .container > #container-inner-no-bg.faq {
+  /* This relies on EM navbar getting loaded properly */
+  font-family: "Oswald", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-transform: none;
+}
 html body > .container > #container-inner {
   margin: 0 auto;
   width: 914px;
