@@ -95,6 +95,7 @@ app.post('/play', auth.authorize(1, 0, null, true), function(req, res){
 		args.memberships = req.session.experimonth.memberships;
 		if(!currentExperimonthId) {
 			res.render('dashboard', args);
+			return;
 		}
 	}
 	
