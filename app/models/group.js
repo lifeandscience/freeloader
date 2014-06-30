@@ -527,6 +527,8 @@ GroupSchema.statics.doNightly = function(callback){
 											if(V) console.log('got player:', player);
 											if(player){
 												player.group = group._id;
+												player.lastAction = wasWalkaway ? 'walkaway' : null;
+												player.todaysAction = null;
 												groupMap[groupID].players.push(player);
 												i++;
 
