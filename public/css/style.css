@@ -554,6 +554,31 @@ table td {
   .people.freeloaders .freeloader:nth-child(4n+9) {
     margin-left: 0;
   }
+  .people.newGame {
+    top: 136px;
+    left: 54px;
+  }
+  .people.newGame .person:nth-child(1n+5) {
+    margin-top: -35px;
+  }
+  .people.newGame .person:nth-child(4n+1) {
+    margin-left: 40px;
+  }
+  .people.newGame .person:nth-child(4n+5) {
+    margin-left: 20px;
+  }
+  .people.newGame .person:nth-child(4n+9) {
+    margin-left: 0;
+  }
+  .people.newGame .person:nth-child(4n+13) {
+    margin-left: 20px;
+  }
+  .people.newGame .person:nth-child(1n+12) {
+    margin-right: 20px;
+  }
+  .people.newGame .person:nth-child(1n+13) {
+    margin-right: 0;
+  }
   .people .person {
     width: 30px;
     height: 56px;
