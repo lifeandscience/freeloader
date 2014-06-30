@@ -170,11 +170,53 @@ table td {
   height: 111px;
   background: transparent scroll no-repeat left top;
 }
-.people .person.investor {
+.people .person.investor-1 {
   background-image: url('../images/person-facing-right.png');
 }
-.people .person.freeloader {
+.people .person.freeloader-1 {
   background-image: url('../images/person-facing-left.png');
+}
+.people .person.investor-2 {
+  background-image: url('../images/person-facing-right-2.png');
+}
+.people .person.freeloader-2 {
+  background-image: url('../images/person-facing-left-2.png');
+}
+.people .person.investor-3 {
+  background-image: url('../images/person-facing-right-3.png');
+}
+.people .person.freeloader-3 {
+  background-image: url('../images/person-facing-left-3.png');
+}
+.people .person.investor-4 {
+  background-image: url('../images/person-facing-right-4.png');
+}
+.people .person.freeloader-4 {
+  background-image: url('../images/person-facing-left-4.png');
+}
+.people .person.investor-5 {
+  background-image: url('../images/person-facing-right-5.png');
+}
+.people .person.freeloader-5 {
+  background-image: url('../images/person-facing-left-5.png');
+}
+.people .person.investor-6 {
+  background-image: url('../images/person-facing-right-6.png');
+}
+.people .person.freeloader-6 {
+  background-image: url('../images/person-facing-left-6.png');
+}
+.people .person.investor-7 {
+  background-image: url('../images/person-facing-right-7.png');
+}
+.people .person.freeloader-7 {
+  background-image: url('../images/person-facing-left-7.png');
+}
+.people .person.investor-8 {
+  background-image: url('../images/person-facing-right-8.png');
+}
+.people .person.freeloader-8 {
+  background-image: url('../images/person-facing-left-8.png');
 }
 .people .person.you:before {
   content: '';

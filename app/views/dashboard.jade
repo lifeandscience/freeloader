@@ -1,6 +1,7 @@
 extends layout
 
 block body
+	- var numSprites = 8
 	script.
 		var numPlayers = '#{numPlayers}';
 		var currentExperimonthId = '#{currentExperimonthId}';
@@ -51,14 +52,18 @@ block body
 			.prompt.mobile-prompt Tap an avatar to see bank balance.
 			.people.investors
 				if freeloaders.length == 0 && investors.length == 0 && locals.currentPlayer && locals.currentPlayer.todaysAction == 'invest'
+					- var rand = Math.floor(Math.random()*numSprites)+1
 					a.person.investor.tooltip-trigger.you(
+							class='investor-'+rand,
 							data-player-id=currentPlayer._id,
 							data-player-balance=currentPlayer.balance.toFixed(2),
 							data-toggle="popover",
 							data-title="Balance: $"+currentPlayer.balance.toFixed(2)
 						)
 				each investor, i in investors
+					- var rand = Math.floor(Math.random()*numSprites)+1
 					a.person.investor.tooltip-trigger(
+							class='investor-'+rand,
 							data-player-id=investor._id,
 							data-player-balance=investor.balance.toFixed(2),
 							data-toggle="popover",
@@ -70,7 +75,9 @@ block body
 					//- Test people
 					- for(var i=0; i<12; i++)
 						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+						- var rand = Math.floor(Math.random()*numSprites)+1
 						a.person.investor.tooltip-trigger(
+								class='investor-'+rand,
 								data-player-id="test"
 								data-player-balance=fauxBalance,
 								data-toggle="popover",
@@ -85,7 +92,9 @@ block body
 			- lastTake = 0
 			.people.freeloaders
 				if freeloaders.length == 0 && investors.length == 0 && locals.currentPlayer && locals.currentPlayer.todaysAction == 'freeload'
+					- var rand = Math.floor(Math.random()*numSprites)+1
 					a.person.freeloader.tooltip-trigger.you(
+							class='freeloader-'+rand,
 							data-player-id=currentPlayer._id,
 							data-player-balance=currentPlayer.balance.toFixed(2),
 							data-toggle="popover",
@@ -93,7 +102,9 @@ block body
 						)
 				
 				each freeloader, i in freeloaders
+					- var rand = Math.floor(Math.random()*numSprites)+1
 					a.person.freeloader.tooltip-trigger(
+							class='freeloader-'+rand,
 							data-player-id=freeloader._id,
 							data-player-balance=freeloader.balance.toFixed(2),
 							data-toggle="popover",
@@ -105,7 +116,9 @@ block body
 					//- Test people
 					- for(var i=0; i<12; i++)
 						- var fauxBalance = (Math.floor(Math.random() * (11))).toFixed(2)
+						- var rand = Math.floor(Math.random()*numSprites)+1
 						a.person.freeloader.tooltip-trigger(
+								class='freeloader-'+rand,
 								data-player-id="test"
 								data-player-balance=fauxBalance,
 								data-toggle="popover",
@@ -120,8 +133,9 @@ block body
 					- for(var i=0; i<numPlayers; i++)
 						if i < numPlayers-2 || !skipMe
 							- orientation = choices[Math.floor(Math.random()*2)]
+							- var rand = Math.floor(Math.random()*numSprites)+1
 							a.person.tooltip-trigger(
-									class=(i == numPlayers-1 ? 'you' : '')+' '+orientation,
+									class=(i == numPlayers-1 ? 'you' : '')+' '+orientation+'-'+rand,
 									data-player-id="test"
 									data-player-balance=0,
 									data-toggle="popover",
@@ -131,8 +145,9 @@ block body
 						//- Test people
 						- for(var i=0; i<10; i++)
 							- orientation = choices[Math.floor(Math.random()*2)]
+							- var rand = Math.floor(Math.random()*numSprites)+1
 							a.person.tooltip-trigger(
-									class=orientation
+									class=orientation+'-'+rand
 									data-player-id="test"
 									data-player-balance=0,
 									data-toggle="popover",
