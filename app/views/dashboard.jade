@@ -153,7 +153,18 @@ block body
 									data-toggle="popover",
 									data-title="Balance: $0"
 								)
-				
+			else if locals.currentPlayer && currentPlayer.newGroup
+				.people.newGroup
+					- var choices = ['freeloader', 'investor']
+					- var orientation = choices[Math.floor(Math.random()*2)]
+					- var rand = Math.floor(Math.random()*numSprites)+1
+					a.person.tooltip-trigger(
+							class='you '+orientation+'-'+rand,
+							data-player-id="test"
+							data-player-balance=currentPlayer.balance.toFixed(2),
+							data-toggle="popover",
+							data-title="Balance: $"+currentPlayer.balance.toFixed(2)
+						)
 
 			.decision-form
 				if walkawayEnabled

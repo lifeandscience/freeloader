@@ -122,15 +122,17 @@ GroupSchema.statics.doNightly = function(callback){
 					if(group){
 						group = group.toString();
 					}else{
-						group = 'null';
+						// group = 'null';
 					}
-					if(!groupMap[group]){
-						groupMap[group] = {
-							players: [],
-							group: group
-						};
+					if(group){
+						if(!groupMap[group]){
+							groupMap[group] = {
+								players: [],
+								group: group
+							};
+						}
+						groupMap[group].players.push(player);
 					}
-					groupMap[group].players.push(player);
 
 					//  2	Check for players here in this experimonth that don't exist in the list of players from the auth server.
 					if(!authServerUserMap[player.remote_user]){
@@ -152,6 +154,7 @@ GroupSchema.statics.doNightly = function(callback){
 						});
 					}
 				});
+				if(V) console.log('built groupMap:', groupMap);
 				
 				var pickSmallestGroup = function(groupIDsToIgnore){
 					if(!groupIDsToIgnore){
@@ -160,7 +163,9 @@ GroupSchema.statics.doNightly = function(callback){
 					if(V) console.log('Picking the smallest group while ignoring: ', groupIDsToIgnore);
 					var smallest = Infinity;
 					var smallestGroupDetails = null;
+					if(V) console.log('looking in groupMap:', groupMap);
 					_.each(groupMap, function(groupDetails, groupID){
+						if(V) console.log('Inspecting: ', groupDetails.players.length, groupIDsToIgnore, groupID);
 						if(groupDetails.players.length < smallest && groupIDsToIgnore.indexOf(groupID) === -1){
 							smallest = groupDetails.players.length;
 							smallestGroupDetails = groupDetails;
@@ -299,6 +304,7 @@ GroupSchema.statics.doNightly = function(callback){
 												}, function(err, body){
 													player.lastAction = player.todaysAction;
 													player.todaysAction = null;
+													player.newGroup = false;
 													player.save(callback);
 												});
 											});
@@ -323,6 +329,7 @@ GroupSchema.statics.doNightly = function(callback){
 												}, function(err, body){
 													player.lastAction = player.todaysAction;
 													player.todaysAction = null;
+													player.newGroup = false;
 													player.save(callback);
 												});
 											});
@@ -336,7 +343,7 @@ GroupSchema.statics.doNightly = function(callback){
 								// 11		If this group has < 3 members, dissolve it
 								// 12			(call the leftover members 'abandonees')
 								// 13			For each walkaway that caused this group to be dissolved, remember the set of abandonees
-								if(groupMap[groupID].players.length < 3 && _.size(groupMap) > 1){
+								if(groupMap[groupID].players.length < 3 && _.size(groupMap) > 1 && _.size(authServerUserMap) > 6){
 									async.each(groupMap[groupID].players, function(player, playerCallback){
 										abandonees.push(player);
 										
@@ -392,6 +399,7 @@ GroupSchema.statics.doNightly = function(callback){
 							matchingPlayer.balance = config('startingPoints', experimonth._id);
 							matchingPlayer.lastAction = matchingPlayer.todaysAction;
 							matchingPlayer.todaysAction = null;
+							matchingPlayer.newGroup = false;
 							matchingPlayer.save(function(err, newPlayer){
 								if(err) console.log('Error saving new player: ', err);
 								if(V) console.log('New Player saved!');
@@ -419,6 +427,7 @@ GroupSchema.statics.doNightly = function(callback){
 									_.each(abandonees, function(abandonee){
 										var groupDetails = pickSmallestGroup([]);
 										if(groupDetails){
+											abandonee.newGroup = true;
 											abandonee.group = groupDetails.group;
 											placementMap[abandonee._id.toString()] = abandonee.group;
 											
@@ -449,6 +458,7 @@ GroupSchema.statics.doNightly = function(callback){
 										if(placementMatchupMap[abandonee.group]){
 											// Another abandonee from the same group has already been placed somewhere.
 											// Place this abandonee in the same group, leaving the other group for the walkaway player
+											abandonee.newGroup = true;
 											abandonee.group = placementMatchupMap[abandonee.group];
 											placementMap[abandonee._id.toString()] = abandonee.group;
 											abandonee.save(function(err){
@@ -458,6 +468,7 @@ GroupSchema.statics.doNightly = function(callback){
 										}else{
 											var smallestGroupDetails = pickSmallestGroup([]);
 											placementMatchupMap[abandonee.group] = smallestGroupDetails.group;
+											abandonee.newGroup = true;
 											abandonee.group = smallestGroupDetails.group;
 											placementMap[abandonee._id.toString()] = abandonee.group;
 											abandonee.save(function(err){
@@ -527,6 +538,7 @@ GroupSchema.statics.doNightly = function(callback){
 											if(V) console.log('got player:', player);
 											if(player){
 												player.group = group._id;
+												player.newGroup = true;
 												player.lastAction = wasWalkaway ? 'walkaway' : null;
 												player.todaysAction = null;
 												groupMap[groupID].players.push(player);
@@ -574,6 +586,7 @@ GroupSchema.statics.doNightly = function(callback){
 										
 										var smallestGroupDetails = pickSmallestGroup(groupsToIgnore);
 										if(smallestGroupDetails){
+											walkaway.newGroup = true;
 											walkaway.group = smallestGroupDetails.group;
 											placementMap[walkaway._id.toString()] = walkaway.group;
 
@@ -607,6 +620,7 @@ GroupSchema.statics.doNightly = function(callback){
 											
 											var smallestGroupDetails = pickSmallestGroup([]);
 											if(smallestGroupDetails){
+												newbie.newGroup = true;
 												newbie.group = smallestGroupDetails.group;
 												placementMap[newbie._id.toString()] = newbie.group;
 

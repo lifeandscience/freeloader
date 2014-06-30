@@ -16,7 +16,8 @@ var PlayerSchema = new Schema({
 	defaultAction: String,
 	lastTake: {type: Number, default: 0},
 	lastAction: String,
-	todaysAction: String
+	todaysAction: String,
+	newGroup: {type: Boolean, default: false}
 });
 
 PlayerSchema.method('notify', function(type, format, subject, text, callback){

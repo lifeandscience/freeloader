@@ -298,6 +298,13 @@ table td {
 .people.newGame .person:nth-child(4n+13) {
   margin-left: 0;
 }
+.people.newGroup {
+  left: 450px;
+}
+.people.newGroup .person {
+  float: left;
+  margin-right: 10px;
+}
 .prompt {
   width: 65px;
   position: absolute;
@@ -625,6 +632,10 @@ table td {
   }
   .people.newGame .person:nth-child(1n+13) {
     margin-right: 0;
+  }
+  .people.newGroup {
+    top: 176px;
+    left: 134px;
   }
   .people .person {
     width: 30px;
