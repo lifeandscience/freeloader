@@ -43,13 +43,13 @@ PlayerSchema.method('notify', function(type, format, subject, text, callback){
 
 PlayerSchema.methods.notifyOfFreeload = function(amountEarned, callback) {
 	var url = process.env.BASEURL + '/play';
-	var title = 'Yesterday You Freeloaded';
+	var title = 'Freeloader Daily Report';
 	var text = ' You chose to freeload yesterday. You earned $' + amountEarned.toFixed(2) + ' and your new balance is $' + this.balance.toFixed(2)+'. Make a decision for today at\n\n'+url;
 	this.notify("info", ['web', 'email'], title, text, callback);
 };
 PlayerSchema.methods.notifyOfInvestment = function(amountEarned, callback) {
 	var url = process.env.BASEURL + '/play';
-	var title = 'Yesterday You Invested';
+	var title = 'Freeloader Daily Report';
 	var text = ' You chose to invest yesterday. You earned $' + amountEarned.toFixed(2) + ' and your new balance is $' + this.balance.toFixed(2)+'. Make a decision for today at\n\n'+url;
 	this.notify("info", ['web', 'email'], title, text, callback);
 };
@@ -77,7 +77,7 @@ PlayerSchema.methods.notifyOfDesertion = function(callback) {
 	this.notify("info", ['web', 'email'], title, text, callback);
 };
 PlayerSchema.methods.notifyOfMooching = function(callback) {
-	var title = 'Yesterday you and all the members of your group Freeloaded.';
+	var title = 'Freeloader: Game Over';
 	var text = ' Because you and all of your peers chose to Freeload yesterday, your group has been disbanded, you\'ve been unenrolled from this Experimonth, and your balance has been reset to zero. You\'ll no longer be prompted to play unless you re-enroll.';
 	this.notify("info", ['web', 'email'], title, text, callback);
 };
