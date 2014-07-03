@@ -31,6 +31,14 @@ html body > .container > #container-inner-no-bg.faq {
   /* This relies on EM navbar getting loaded properly */
   font-family: "Oswald", "Helvetica Neue", Helvetica, Arial, sans-serif;
   text-transform: none;
+  width: 70%;
+  margin: 0 auto;
+  padding: 10px;
+  background-color: #333333;
+  border: 1px solid #999999;
+}
+html body > .container > #container-inner-no-bg.faq h1 {
+  margin-top: 0;
 }
 html body > .container > #container-inner {
   margin: 0 auto;
@@ -475,6 +483,9 @@ table td {
   html body > .container > #container-inner-no-bg {
     margin: 0 auto;
     width: 320px;
+  }
+  html body > .container > #container-inner-no-bg.faq {
+    width: 90%;
   }
   html body > .container > #container-inner {
     margin: 0 auto;

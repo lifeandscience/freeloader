@@ -1,6 +1,6 @@
 @blue: #00a6df;
 @yellow: #ffc000;
- 
+
 @font-face {
 	font-family: Silom;
 	src: url('/fonts/silom.woff') format("woff"),
@@ -41,6 +41,16 @@ html {
 					/* This relies on EM navbar getting loaded properly */
 					font-family: "Oswald", "Helvetica Neue", Helvetica, Arial, sans-serif;
 					text-transform: none;
+                    
+                    width: 70%;
+                    margin: 0 auto;
+                    padding: 10px;
+                    background-color: #333333;
+                    border: 1px solid #999999;
+                    
+                    h1 {
+                        margin-top: 0;
+                    }
 				}
 			}
 			> #container-inner {
@@ -567,6 +577,10 @@ table td {
 				> #container-inner-no-bg {
 					margin: 0 auto;
 					width: 320px;
+                    
+                    &.faq {
+                        width: 90%;
+                    }
 				}
 				> #container-inner {
 					margin: 0 auto;
